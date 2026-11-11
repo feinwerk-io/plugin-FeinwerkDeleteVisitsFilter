@@ -1,0 +1,11 @@
+{# Tip line of the Feinwerk promotion kit (Page Filter Report's docs/promo-kit.md): under this plugin's admin page, after the feedback question.
+   One compact line: the sentence, its link and the hide control; no label, no title (Peter, 2026-11-11). The banner and
+   the context boxes (templates/_promoBox.twig) keep both.
+   promo = PromoLine::variables() {id, placement, title, text, link, url, dismissDays}; hiding for 30 days and once per
+   page in javascripts/promo.js. #}
+<div class="fwpromo-line" data-fwpromo-id="{{ promo.id }}" data-fwpromo-placement="line" data-fwpromo-days="{{ promo.dismissDays }}">
+    <span class="fwpromo-line__text">{{ promo.text }}</span>
+    <a class="fwpromo-line__link" href="{{ promo.url }}" target="_blank" rel="noopener">{{ promo.link }}</a>
+    <button type="button" class="fwpromo-line__dismiss fwpromo-dismiss" title="{{ 'FeinwerkDeleteVisitsFilter_PromoDismiss'|translate }}"
+            aria-label="{{ 'FeinwerkDeleteVisitsFilter_PromoDismiss'|translate }}"><span aria-hidden="true">&times;</span></button>
+</div>

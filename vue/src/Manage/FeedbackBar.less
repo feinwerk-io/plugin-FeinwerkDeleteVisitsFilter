@@ -1,0 +1,80 @@
+// Matomo - free/libre analytics platform
+// @link    https://matomo.org
+// @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
+//
+// Feinwerk feedback kit, one compact line (reference: Feinwerk Page Filter Report b628e33, stylesheets/feedback.css):
+// question, thumbs and support link; after a vote the thanks takes the place of question and thumbs. Plain CSS with
+// Matomo's custom properties and light fallbacks (no Matomo LESS variables: the 5.x line allows Matomo 5.1).
+
+.fwdvf-feedback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin: 6px 0 2px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--theme-color-text-lighter, #646464);
+}
+
+.fwdvf-feedback__thumb {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 1px 4px;
+    border: 1px solid var(--theme-color-border-alternative, var(--theme-color-border, #ccc));
+    border-radius: 3px;
+    background: transparent;
+    color: var(--theme-color-text-lighter, #646464);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.fwdvf-feedback__thumb svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.fwdvf-feedback__thumb:hover,
+.fwdvf-feedback__thumb:focus-visible {
+    border-color: var(--theme-color-brand, #43a047);
+    color: var(--theme-color-brand, #43a047);
+}
+
+.fwdvf-feedback__thumb:focus-visible,
+.fwdvf-feedback__support:focus-visible {
+    outline: 2px solid var(--theme-color-focus-ring, #0969da);
+    outline-offset: 2px;
+}
+
+.fwdvf-feedback__icon--down {
+    transform: rotate(180deg);
+}
+
+/* after a vote: the thanks replaces question and thumbs in the same line */
+.fwdvf-feedback.is-voted .fwdvf-feedback__question,
+.fwdvf-feedback.is-voted .fwdvf-feedback__thumb {
+    display: none;
+}
+
+.fwdvf-feedback__thanks {
+    color: var(--theme-color-text-light, #444);
+}
+
+/* stays in the document while empty (so screen readers announce the thanks), but takes no room */
+.fwdvf-feedback__thanks:empty {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+.fwdvf-feedback__support {
+    margin-left: auto;
+    color: var(--theme-color-link, #1976d2);
+    text-decoration: underline;
+}

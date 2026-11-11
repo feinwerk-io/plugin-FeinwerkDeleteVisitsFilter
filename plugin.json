@@ -1,0 +1,35 @@
+{
+    "name": "FeinwerkDeleteVisitsFilter",
+    "description": "Delete visits by segment, date range and website. Reliable for millions of visits and continues in the background.",
+    "version": "5.0.2",
+    "theme": false,
+    "require": {
+        "matomo": ">=5.1.0,<6.0.0-b1",
+        "php": ">=8.1.0"
+    },
+    "authors": [
+        {
+            "name": "Peter Boehlke, Feinwerk.io",
+            "email": "support@feinwerk.io",
+            "homepage": "https://feinwerk.io"
+        }
+    ],
+    "license": "GPL v3+",
+    "homepage": "https://feinwerk.io",
+    "keywords": [
+        "delete",
+        "visits",
+        "filter",
+        "bulk",
+        "gdpr",
+        "privacy",
+        "bots",
+        "spam",
+        "cleanup"
+    ],
+    "support": {
+        "email": "support@feinwerk.io",
+        "docs": "https://plugins.feinwerk.io/en/docs/plugins/FeinwerkDeleteVisitsFilter"
+    },
+    "category": "database"
+}

@@ -1,0 +1,73 @@
+/*!
+ * Matomo - free/libre analytics platform
+ *
+ * @link    https://matomo.org
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
+ */
+
+@import "../Manage/theme.less";
+
+.fwdvf-history {
+  .fwdvf-history-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+
+    // Matomo's field markup: .row centres a flex item with auto margins, the select sits in a half-width column
+    // next to an empty help column, and .input-field adds a bottom margin below the select.
+    .form-group {
+      min-width: 200px;
+      margin: 0;
+
+      > .col {
+        width: 100%;
+        margin-left: 0;
+        padding-left: 0;
+      }
+
+      > .col:empty {
+        display: none;
+      }
+    }
+
+    .input-field {
+      margin-bottom: 0;
+
+      // The column padding is removed above, so the label starts at the left edge like the value below it.
+      label {
+        left: 0;
+      }
+    }
+  }
+
+  // Nine columns: keep the segment narrower than elsewhere so the table fits its card.
+  .fwdvf-segment-cell {
+    max-width: 160px;
+  }
+
+  // Wide enough for "to 2026-11-11" on one line: a narrower cell breaks inside a date at its hyphen.
+  .fwdvf-range-cell {
+    min-width: 8.5em;
+  }
+
+  // Website names wrap between names, not after every word.
+  .fwdvf-sites-cell {
+    min-width: 8em;
+  }
+
+  .fwdvf-actions a {
+    display: inline-block;
+    margin-right: 10px;
+    white-space: nowrap;
+  }
+
+  .fwdvf-details td {
+    background: @fwdvf-background-tiny;
+  }
+
+  .fwdvf-paging {
+    display: flex;
+    gap: 8px;
+  }
+}
