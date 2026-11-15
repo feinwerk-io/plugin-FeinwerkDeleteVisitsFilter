@@ -47,7 +47,7 @@
           {{ translate('FeinwerkDeleteVisitsFilter_AddMatchingWebsites') }}
         </button>
         <span v-if="addedCount !== null" class="fwdvf-hint">
-          {{ translate('FeinwerkDeleteVisitsFilter_WebsitesAdded', addedCount) }}
+          {{ translate(addedHintKey(addedCount), addedCount) }}
         </span>
       </div>
       <p v-if="!modelValue.multiple.length" class="fwdvf-hint">
@@ -82,7 +82,7 @@
 import { defineComponent, PropType } from 'vue';
 import { SiteSelector, translate } from 'CoreHome';
 import {
-  addSites, allSiteIds, matchingSiteIds, SiteChoice, SiteMode, SiteNames,
+  addedHintKey, addSites, allSiteIds, matchingSiteIds, SiteChoice, SiteMode, SiteNames,
 } from '../lib/sites';
 
 export interface SiteRefValue {
@@ -127,6 +127,7 @@ export default defineComponent({
     },
   },
   methods: {
+    addedHintKey,
     nameOf(id: number): string {
       return this.siteNames[id] ?? `#${id}`;
     },

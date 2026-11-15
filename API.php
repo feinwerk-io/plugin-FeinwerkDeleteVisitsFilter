@@ -9,6 +9,7 @@
 
 namespace Piwik\Plugins\FeinwerkDeleteVisitsFilter;
 
+use Piwik\Common;
 use Piwik\Container\StaticContainer;
 use Piwik\Option;
 use Piwik\Piwik;
@@ -18,6 +19,7 @@ use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\DateWindow;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\SiteDirectory;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\VisitFinder;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Feedback\PluginFeedback;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\BadRequestException;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\DateRange;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\InvalidInputException;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\RequestValue;
@@ -25,6 +27,7 @@ use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\DeletionPreview;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\Job;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobControl;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobFactory;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobNotFoundException;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobRepository;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobRunner;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\MatomoRunnerLock;
@@ -269,7 +272,7 @@ class API extends PluginAPI
                 (string) StaticContainer::get(Translator::class)->getCurrentLanguage()
             );
         } catch (\InvalidArgumentException $e) {
-            throw new \Exception(Piwik::translate('FeinwerkDeleteVisitsFilter_FeedbackInvalid'));
+            throw self::badRequest(Piwik::translate('FeinwerkDeleteVisitsFilter_FeedbackInvalid'), $e);
         }
         $key = PluginFeedback::throttleOption(Piwik::getCurrentUserLogin(), $payload['topic']);
         if (time() - (int) Option::get($key) < 10) {
@@ -294,6 +297,9 @@ class API extends PluginAPI
     }
 
     /**
+     * Runs the operation; invalid input becomes HTTP 400 and an unknown job HTTP 404 (see withHttpStatus()), each with the
+     * translated message.
+     *
      * @return mixed
      */
     private function translated(callable $operation)
@@ -301,8 +307,32 @@ class API extends PluginAPI
         try {
             return $operation();
         } catch (InvalidInputException $e) {
-            throw new \Exception(Piwik::translate($e->translationKey, $e->params), 0, $e);
+            $message = Piwik::translate($e->translationKey, $e->params);
+            if ($e->translationKey === 'FeinwerkDeleteVisitsFilter_ErrorJobNotFound') {
+                throw self::notFound($message, $e);
+            }
+            throw self::badRequest($message, $e);
         }
+    }
+
+    /**
+     * API errors carry an HTTP status (400, 404) for scripts and integrations. Calls of the plugin's own admin page keep
+     * HTTP 200: Matomo's AjaxHelper sends them with force_api_session=1 and, for any error status, replaces the API's
+     * message with "Something went wrong" (Matomo 5.0 to 6.0), so the page could no longer say what went wrong.
+     */
+    public static function withHttpStatus(): bool
+    {
+        return Common::getRequestVar('force_api_session', 0, 'int') !== 1;
+    }
+
+    private static function badRequest(string $message, ?\Throwable $previous = null): \Exception
+    {
+        return self::withHttpStatus() ? new BadRequestException($message, $previous) : new \Exception($message, 0, $previous);
+    }
+
+    private static function notFound(string $message, ?\Throwable $previous = null): \Exception
+    {
+        return self::withHttpStatus() ? new JobNotFoundException($message, $previous) : new \Exception($message, 0, $previous);
     }
 
     private function window(int $idSite, DateRange $range): DateWindow
@@ -314,7 +344,7 @@ class API extends PluginAPI
     {
         $job = $this->jobs->get((int) $idJob);
         if ($job === null) {
-            throw new \Exception(Piwik::translate('FeinwerkDeleteVisitsFilter_ErrorJobNotFound', [(int) $idJob]));
+            throw self::notFound(Piwik::translate('FeinwerkDeleteVisitsFilter_ErrorJobNotFound', [(int) $idJob]));
         }
 
         return $job;

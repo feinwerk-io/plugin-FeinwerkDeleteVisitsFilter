@@ -2,27 +2,39 @@
 // @link    https://matomo.org
 // @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
 //
-// Feinwerk feedback kit, one compact line (reference: Feinwerk Page Filter Report b628e33, stylesheets/feedback.css):
-// question, thumbs and support link; after a vote the thanks takes the place of question and thumbs. Plain CSS with
-// Matomo's custom properties and light fallbacks (no Matomo LESS variables: the 5.x line allows Matomo 5.1).
+// Feinwerk feedback kit, footer variant A (Peter, 2026-11-13; reference: Feinwerk Page Filter Report docs/footer.md and
+// stylesheets/feedback.css): one low row at the end of the admin page, separated by a hairline: question (ends with an
+// ellipsis when it does not fit), borderless thumbs, and at the end a quiet grey support link with a help icon. The row
+// never wraps. After a vote the thanks takes the place of question and thumbs. Plain CSS with Matomo's custom properties
+// and light fallbacks (no Matomo LESS variables: the 5.x line allows Matomo 5.1).
 
 .fwdvf-feedback {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 4px 6px;
-    margin: 6px 0 2px;
+    gap: 6px;
+    margin: 6px 0 0;
+    padding: 8px 0 2px;
+    border-top: 1px solid var(--theme-color-border-alternative, var(--theme-color-border, #e3e3e3));
     font-size: 12px;
     line-height: 1.4;
     color: var(--theme-color-text-lighter, #646464);
 }
 
+.fwdvf-feedback__question {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 .fwdvf-feedback__thumb {
+    flex: none;
     display: inline-flex;
     align-items: center;
     margin: 0;
-    padding: 1px 4px;
-    border: 1px solid var(--theme-color-border-alternative, var(--theme-color-border, #ccc));
+    padding: 1px 2px;
+    border: 1px solid transparent;
     border-radius: 3px;
     background: transparent;
     color: var(--theme-color-text-lighter, #646464);
@@ -30,7 +42,8 @@
     cursor: pointer;
 }
 
-.fwdvf-feedback__thumb svg {
+.fwdvf-feedback__thumb svg,
+.fwdvf-feedback__support svg {
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -40,7 +53,6 @@
 
 .fwdvf-feedback__thumb:hover,
 .fwdvf-feedback__thumb:focus-visible {
-    border-color: var(--theme-color-brand, #43a047);
     color: var(--theme-color-brand, #43a047);
 }
 
@@ -54,13 +66,17 @@
     transform: rotate(180deg);
 }
 
-/* after a vote: the thanks replaces question and thumbs in the same line */
+/* after a vote: the thanks replaces question and thumbs in the same row */
 .fwdvf-feedback.is-voted .fwdvf-feedback__question,
 .fwdvf-feedback.is-voted .fwdvf-feedback__thumb {
     display: none;
 }
 
 .fwdvf-feedback__thanks {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--theme-color-text-light, #444);
 }
 
@@ -74,7 +90,17 @@
 }
 
 .fwdvf-feedback__support {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     margin-left: auto;
+    color: var(--theme-color-text-lighter, #646464);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.fwdvf-feedback__support:hover,
+.fwdvf-feedback__support:focus-visible {
     color: var(--theme-color-link, #1976d2);
-    text-decoration: underline;
 }

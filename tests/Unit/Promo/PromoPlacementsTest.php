@@ -49,6 +49,16 @@ class PromoPlacementsTest extends TestCase
         self::assertNull(PromoPlacements::messageFor('ecommerce', $capi));
     }
 
+    /** The banner sits at the top of the admin home only: Template.beforeContent fires on every page. */
+    public function test_the_banner_only_on_the_admin_home(): void
+    {
+        self::assertTrue(PromoPlacements::isAdminHome('admin', 'CoreAdminHome', 'home'));
+        self::assertFalse(PromoPlacements::isAdminHome('admin', 'CoreAdminHome', 'generalSettings'));
+        self::assertFalse(PromoPlacements::isAdminHome('admin', 'FeinwerkDeleteVisitsFilter', 'index'));
+        self::assertFalse(PromoPlacements::isAdminHome('dashboard', 'CoreHome', 'index'));
+        self::assertFalse(PromoPlacements::isAdminHome('login', null, null));
+    }
+
     /** Every message belongs to a placement this kit fills, and every placement has a message. */
     public function test_messages_and_placements_match(): void
     {

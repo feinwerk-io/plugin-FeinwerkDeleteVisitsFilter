@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.0.3
+
+- "1 website added." instead of "1 websites added." when a name filter adds a single website.
+- API errors for scripts and integrations come with a fitting HTTP status: 400 for invalid input, 404 for an unknown deletion.
+- The Feinwerk tip on the start page of Matomo's administration now appears at the top of the page.
+- The Feinwerk tips on the start page of the administration and on matching reports show the Feinwerk Plugins logo.
+- The feedback question and the tip below the admin page are quieter and always take a single line; the support link has a help icon.
+
 ## 5.0.2
 
 - History: the start of a deletion is shown like the date ranges (for example 2026-11-11 22:57), and website names no longer wrap after every word.

@@ -17,7 +17,7 @@
     :class="{ 'is-voted': vote !== '' }"
   >
     <template v-if="feedback.enabled">
-      <span class="fwdvf-feedback__question">{{ question }}</span>
+      <span class="fwdvf-feedback__question" :title="question">{{ question }}</span>
       <button
         v-for="choice in choices"
         :key="choice"
@@ -49,7 +49,13 @@
       target="_blank"
       rel="noopener noreferrer"
       :title="tr('SupportTitle')"
-    >{{ tr('Support') }}</a>
+    ><svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      aria-hidden="true"
+      focusable="false"
+    ><circle cx="12" cy="12" r="9" /><path :d="helpPath" /></svg>{{ tr('Support') }}</a>
   </div>
 </template>
 
@@ -61,6 +67,8 @@ const PLUGIN = 'FeinwerkDeleteVisitsFilter';
 
 /** a thumb outline (24 x 24); the down thumb is the same, rotated */
 const THUMB_PATH = 'M3 10h4v10H3zM7 10l4-7c1.3 0 2.2 1.1 2 2.4L12.4 9H19a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7';
+// question mark of the help icon in the support link (footer variant A)
+const HELP_PATH = 'M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17h.01';
 
 type Vote = 'up' | 'down';
 
@@ -105,6 +113,9 @@ export default defineComponent({
     },
     thumbPath(): string {
       return THUMB_PATH;
+    },
+    helpPath(): string {
+      return HELP_PATH;
     },
     thanks(): string {
       if (!this.vote) {

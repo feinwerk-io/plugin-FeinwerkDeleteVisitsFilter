@@ -89,3 +89,10 @@ export function summarizeSites(
     all: coversAll(ids, allIds),
   };
 }
+
+/** The translation key of the hint after "Add all matching": singular for exactly one website. */
+export function addedHintKey(count: number): string {
+  return count === 1
+    ? 'FeinwerkDeleteVisitsFilter_WebsiteAdded'
+    : 'FeinwerkDeleteVisitsFilter_WebsitesAdded';
+}

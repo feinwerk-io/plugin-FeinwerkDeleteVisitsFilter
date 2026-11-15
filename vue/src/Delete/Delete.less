@@ -237,9 +237,10 @@
     white-space: nowrap;
   }
 
-  // White on this red is readable in light and dark mode (5.1:1).
+  // A fixed red (theme.less): white button text needs it in light and dark mode, also where the theme's danger colour
+  // is a light red for text on dark backgrounds.
   .fwdvf-delete-button .btn {
-    background-color: @fwdvf-danger;
+    background-color: @fwdvf-danger-button;
   }
 }
 

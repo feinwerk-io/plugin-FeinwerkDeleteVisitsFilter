@@ -31,9 +31,33 @@
 // Error text and the delete button, in both modes; error text uses the lighter red in dark mode.
 @fwdvf-danger: #d4291f;
 @fwdvf-danger-dark: #ff8a80;
+// The delete button: white text on it, in both modes (5.1:1).
+@fwdvf-danger-button: @fwdvf-danger;
 
 // Rules for Matomo's dark mode, chosen explicitly or following the system (same output as Matomo's .inDarkMode()).
 // Matomo versions without dark mode set no data-theme-mode, so the light look applies there.
+// Status pills (Manage.less): background and text, light and dark.
+@fwdvf-status-neutral-bg: #eee;
+@fwdvf-status-neutral-fg: #333;
+@fwdvf-status-neutral-bg-dark: #3a3a3a;
+@fwdvf-status-neutral-fg-dark: #e0e0e0;
+@fwdvf-status-info-bg: #e3f0fb;
+@fwdvf-status-info-fg: #0b3d66;
+@fwdvf-status-info-bg-dark: #1c3a55;
+@fwdvf-status-info-fg-dark: #bfe0fb;
+@fwdvf-status-success-bg: #e5f5e5;
+@fwdvf-status-success-fg: #1b5e20;
+@fwdvf-status-success-bg-dark: #1f3d22;
+@fwdvf-status-success-fg-dark: #c4ecc6;
+@fwdvf-status-danger-bg: #fbe3e3;
+@fwdvf-status-danger-fg: #8a1c14;
+@fwdvf-status-danger-bg-dark: #4a2220;
+@fwdvf-status-danger-fg-dark: #ffc9c4;
+@fwdvf-status-warning-bg: #fff4d6;
+@fwdvf-status-warning-fg: #6b4e00;
+@fwdvf-status-warning-bg-dark: #4a3b12;
+@fwdvf-status-warning-fg-dark: #ffe49a;
+
 .fwdvf-dark(@rules) {
   [data-theme-mode="dark"]:root & {
     @rules();
@@ -44,4 +68,15 @@
       @rules();
     }
   }
+}
+
+// Background and text of a status pill, with the dark pair under Matomo's dark mode.
+.fwdvf-status-colours(@bg, @fg, @bg-dark, @fg-dark) {
+  background: @bg;
+  color: @fg;
+
+  .fwdvf-dark({
+    background: @bg-dark;
+    color: @fg-dark;
+  });
 }

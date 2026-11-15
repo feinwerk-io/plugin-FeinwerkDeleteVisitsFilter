@@ -12,8 +12,11 @@ namespace Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Integration;
 use Piwik\Concurrency\LockBackend;
 use Piwik\Container\StaticContainer;
 use Piwik\Db;
+use Piwik\Http\HttpCodeException;
 use Piwik\NoAccessException;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\API;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\BadRequestException;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobNotFoundException;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobStore;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\MatomoRunnerLock;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fixtures\DeleteVisitsFixture;
@@ -188,6 +191,43 @@ class APITest extends IntegrationTestCase
 
         $this->expectExceptionMessage('cannot be changed');
         $this->api->retryJob($idJob);
+    }
+
+    /** API errors carry HTTP status codes: 404 for an unknown job, 400 for invalid input (Matomo sets the status). */
+    public function test_errorsCarryHttpStatusCodes(): void
+    {
+        foreach ([fn() => $this->api->getJob(987654), fn() => $this->api->cancelJob(987654)] as $call) {
+            try {
+                $call();
+                $this->fail('an unknown job must be refused');
+            } catch (JobNotFoundException $e) {
+                $this->assertInstanceOf(HttpCodeException::class, $e);
+                $this->assertSame(404, $e->getCode());
+            }
+        }
+
+        try {
+            $this->api->createJob(1, self::BOT, '2026-03-14', 'not a date');
+            $this->fail('invalid input must be refused');
+        } catch (BadRequestException $e) {
+            $this->assertInstanceOf(HttpCodeException::class, $e);
+            $this->assertSame(400, $e->getCode());
+        }
+    }
+
+    /** The admin page's own calls (force_api_session=1) get the message with HTTP 200, as before. */
+    public function test_adminPageCallsKeepHttp200(): void
+    {
+        $_POST['force_api_session'] = '1';
+        try {
+            $this->api->getJob(987654);
+            $this->fail('an unknown job must be refused');
+        } catch (\Exception $e) {
+            $this->assertNotInstanceOf(HttpCodeException::class, $e);
+            $this->assertStringContainsString('987654', $e->getMessage());
+        } finally {
+            unset($_POST['force_api_session']);
+        }
     }
 
     public function test_jsonResponsesKeepNestedFields(): void

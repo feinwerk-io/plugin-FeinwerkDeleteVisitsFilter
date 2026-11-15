@@ -38,7 +38,7 @@ class PluginFeedbackTest extends TestCase
 
     public function testPluginNameMatchesTheStorePattern(): void
     {
-        $this->assertMatchesRegularExpression('/^Feinwerk[A-Za-z0-9]{3,52}$/', PluginFeedback::payload('delete_visits', 'up', '1', '6', '', 'en')['plugin']);
+        $this->assertSame(1, preg_match('/^Feinwerk[A-Za-z0-9]{3,52}$/', PluginFeedback::payload('delete_visits', 'up', '1', '6', '', 'en')['plugin']));
     }
 
     public function testSendsNoBrowserDetailsInHeaders(): void
@@ -138,9 +138,9 @@ class PluginFeedbackTest extends TestCase
     {
         // the LIKE pattern the plugin deletes with (FeinwerkDeleteVisitsFilter::onUserDeleted)
         $like = '/^' . str_replace('%', '.*', preg_quote(PluginFeedback::userOptionPattern('anna'), '/')) . '$/';
-        $this->assertMatchesRegularExpression($like, PluginFeedback::throttleOption('anna', 'delete_visits'), 'per question');
-        $this->assertMatchesRegularExpression($like, PluginFeedback::THROTTLE_OPTION_PREFIX . md5('anna'), 'a per-user key of an older kit');
-        $this->assertDoesNotMatchRegularExpression($like, PluginFeedback::throttleOption('bert', 'delete_visits'));
+        $this->assertSame(1, preg_match($like, PluginFeedback::throttleOption('anna', 'delete_visits')), 'per question');
+        $this->assertSame(1, preg_match($like, PluginFeedback::THROTTLE_OPTION_PREFIX . md5('anna')), 'a per-user key of an older kit');
+        $this->assertSame(0, preg_match($like, PluginFeedback::throttleOption('bert', 'delete_visits')));
     }
 
     public function testEveryWayOfWritingOffSwitchesItOff(): void

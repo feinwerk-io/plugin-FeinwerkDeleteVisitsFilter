@@ -148,7 +148,7 @@ class PromoLineTest extends TestCase
     public function test_every_message_has_texts_a_page_in_both_languages_and_a_placement(): void
     {
         foreach (PromoLine::MESSAGES as $id => $message) {
-            self::assertMatchesRegularExpression('/^[a-z_]+$/', $id);
+            self::assertSame(1, preg_match('/^[a-z_]+$/', $id));
             foreach (['title', 'text', 'link'] as $field) {
                 self::assertStringStartsWith('FeinwerkDeleteVisitsFilter_Promo', $message[$field]);
             }
@@ -199,7 +199,7 @@ class PromoLineTest extends TestCase
             foreach ($keys as $key) {
                 $text = $texts['FeinwerkDeleteVisitsFilter'][substr($key, strlen('FeinwerkDeleteVisitsFilter_'))] ?? '';
                 self::assertNotSame('', $text, $language . ' ' . $key);
-                self::assertDoesNotMatchRegularExpression('/[\x{2013}\x{2014}]/u', $text, $language . ' ' . $key);
+                self::assertSame(0, preg_match('/[\x{2013}\x{2014}]/u', $text), $language . ' ' . $key);
             }
         }
     }

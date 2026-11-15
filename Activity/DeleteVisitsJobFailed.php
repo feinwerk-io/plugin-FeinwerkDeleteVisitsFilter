@@ -14,6 +14,11 @@ use Piwik\Plugins\ActivityLog\Activity\Activity;
 
 class DeleteVisitsJobFailed extends Activity
 {
+    use JobObject;
+
+    /** Bump when getObject() changes, so ActivityLog indexes the existing entries again. */
+    public const OBJECT_INDEX_VERSION = 1;
+
     protected $eventName = 'FeinwerkDeleteVisitsFilter.jobFailed';
 
     public function getPerformingUser($eventData = null)

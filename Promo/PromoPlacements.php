@@ -18,7 +18,7 @@ use Piwik\Widget\WidgetsList;
 
 /**
  * The free placements of the Feinwerk promotion kit (Page Filter Report's docs/promo-kit.md, house rule docs/promotions.md): one banner on
- * Matomo's admin home (event Template.adminHome) and one context box at the end of matching Matomo report pages
+ * Matomo's admin home (top of the page, event Template.beforeContent) and one context box at the end of matching Matomo report pages
  * (event Widget.filterWidgets adds a widget that the controller action promoBox renders). Paid plugins have neither.
  *
  * Each placement is shown once per page, whatever the number of Feinwerk plugins: the first plugin that fills it claims
@@ -82,7 +82,17 @@ final class PromoPlacements
     }
 
     /**
-     * Template.adminHome: the banner, for admins and super users, once per page. Never breaks the page.
+     * Template.beforeContent fires on every page; the banner belongs only at the top of Matomo's admin home (the
+     * arguments exist from Matomo 5.0.0 on: Morpheus' admin.twig passes "admin", the module and the action).
+     */
+    public static function isAdminHome($type, $module, $action): bool
+    {
+        return $type === 'admin' && $module === 'CoreAdminHome' && $action === 'home';
+    }
+
+    /**
+     * The banner at the top of the admin home (Template.beforeContent), for admins and super users, once per page.
+     * Never breaks the page.
      *
      * @param string $out the HTML of the event, appended to
      */

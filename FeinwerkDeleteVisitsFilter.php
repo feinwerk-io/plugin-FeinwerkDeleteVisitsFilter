@@ -27,7 +27,7 @@ class FeinwerkDeleteVisitsFilter extends Plugin
             'Db.getTablesInstalled'                  => 'getTablesInstalled',
             'UsersManager.deleteUser'                => 'onUserDeleted',
             // Feinwerk promotion kit: banner on the admin home, context boxes at the end of matching report pages
-            'Template.adminHome'                     => 'addPromoBanner',
+            'Template.beforeContent'                 => 'addPromoBanner',
             'Widget.filterWidgets'                   => 'addPromoBoxes',
         ];
     }
@@ -62,6 +62,7 @@ class FeinwerkDeleteVisitsFilter extends Plugin
         $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/vue/src/History/HistoryTab.less';
         $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/vue/src/Manage/FeedbackBar.less';
         $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/stylesheets/promo.css';
+        $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/stylesheets/feinwerklogo.css';
     }
 
     public function getJsFiles(array &$jsFiles): void
@@ -69,10 +70,15 @@ class FeinwerkDeleteVisitsFilter extends Plugin
         $jsFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/javascripts/promo.js';
     }
 
-    /** Template.adminHome: the banner of the Feinwerk promotion kit, once per page across all Feinwerk plugins. */
-    public function addPromoBanner(&$out): void
+    /**
+     * Template.beforeContent: the banner of the Feinwerk promotion kit at the top of Matomo's admin home, once per page
+     * across all Feinwerk plugins (Template.adminHome renders far below the Marketplace blocks; Peter, 2026-11-13).
+     */
+    public function addPromoBanner(&$out, $type = null, $module = null, $action = null): void
     {
-        PromoPlacements::adminHome($out);
+        if (PromoPlacements::isAdminHome($type, $module, $action)) {
+            PromoPlacements::adminHome($out);
+        }
     }
 
     /** Widget.filterWidgets: the context boxes of the Feinwerk promotion kit at the end of matching report pages. */

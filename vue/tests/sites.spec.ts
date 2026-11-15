@@ -6,7 +6,8 @@
  */
 
 import {
-  addSites, allSiteIds, choiceFromIds, matchingSiteIds, selectedSiteIds, siteParam, summarizeSites,
+  addedHintKey, addSites, allSiteIds, choiceFromIds, matchingSiteIds, selectedSiteIds, siteParam,
+  summarizeSites,
 } from '../src/lib/sites';
 
 const names = { 3: 'shop AT', 1: 'Shop DE', 2: 'Blog' };
@@ -49,5 +50,13 @@ describe('sites', () => {
     expect(summarizeSites([9], names, [1, 2, 3]))
       .toEqual({ names: ['#9'], more: 0, all: false });
     expect(summarizeSites([3, 1, 2], names, [1, 2, 3]).all).toBe(true);
+  });
+});
+
+describe('addedHintKey', () => {
+  it('uses the singular for exactly one website', () => {
+    expect(addedHintKey(1)).toBe('FeinwerkDeleteVisitsFilter_WebsiteAdded');
+    expect(addedHintKey(0)).toBe('FeinwerkDeleteVisitsFilter_WebsitesAdded');
+    expect(addedHintKey(3)).toBe('FeinwerkDeleteVisitsFilter_WebsitesAdded');
   });
 });

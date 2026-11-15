@@ -46,8 +46,10 @@
     }
 
     function remove(notice) {
-        // a context box is the only content of its Matomo widget: hide that widget as well, so no gap stays behind
-        var widget = notice.classList.contains('fwpromo-box') && notice.closest ? notice.closest('.matomo-widget') : null;
+        // a context box that is the only content of its Matomo widget (data-fwpromo-widget="hide"): hide that widget as
+        // well, so no gap stays behind; a box inside a report widget never takes the report with it
+        var widget = notice.getAttribute('data-fwpromo-widget') === 'hide' && notice.closest
+            ? notice.closest('.matomo-widget') : null;
         if (widget) {
             widget.style.display = 'none';
         }

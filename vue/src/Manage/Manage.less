@@ -57,60 +57,37 @@
     white-space: nowrap;
   }
 
+  // Status pills: colours come from theme.less (fixed light and dark pairs on the 5.x line, Matomo 6's status colours
+  // on main), so this block stays the same on both lines.
   .fwdvf-status {
     display: inline-block;
     padding: 1px 8px;
     border-radius: 10px;
     font-size: 12px;
     font-weight: normal;
-    background: #eee;
-    color: #333;
-
-    .fwdvf-dark({
-      background: #3a3a3a;
-      color: #e0e0e0;
-    });
+    .fwdvf-status-colours(@fwdvf-status-neutral-bg, @fwdvf-status-neutral-fg,
+      @fwdvf-status-neutral-bg-dark, @fwdvf-status-neutral-fg-dark);
   }
 
   .fwdvf-status-queued,
   .fwdvf-status-running {
-    background: #e3f0fb;
-    color: #0b3d66;
-
-    .fwdvf-dark({
-      background: #1c3a55;
-      color: #bfe0fb;
-    });
+    .fwdvf-status-colours(@fwdvf-status-info-bg, @fwdvf-status-info-fg,
+      @fwdvf-status-info-bg-dark, @fwdvf-status-info-fg-dark);
   }
 
   .fwdvf-status-done {
-    background: #e5f5e5;
-    color: #1b5e20;
-
-    .fwdvf-dark({
-      background: #1f3d22;
-      color: #c4ecc6;
-    });
+    .fwdvf-status-colours(@fwdvf-status-success-bg, @fwdvf-status-success-fg,
+      @fwdvf-status-success-bg-dark, @fwdvf-status-success-fg-dark);
   }
 
   .fwdvf-status-failed {
-    background: #fbe3e3;
-    color: #8a1c14;
-
-    .fwdvf-dark({
-      background: #4a2220;
-      color: #ffc9c4;
-    });
+    .fwdvf-status-colours(@fwdvf-status-danger-bg, @fwdvf-status-danger-fg,
+      @fwdvf-status-danger-bg-dark, @fwdvf-status-danger-fg-dark);
   }
 
   .fwdvf-status-held {
-    background: #fff4d6;
-    color: #6b4e00;
-
-    .fwdvf-dark({
-      background: #4a3b12;
-      color: #ffe49a;
-    });
+    .fwdvf-status-colours(@fwdvf-status-warning-bg, @fwdvf-status-warning-fg,
+      @fwdvf-status-warning-bg-dark, @fwdvf-status-warning-fg-dark);
   }
 
   .fwdvf-tabs {

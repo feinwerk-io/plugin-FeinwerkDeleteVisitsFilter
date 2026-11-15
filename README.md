@@ -165,6 +165,21 @@ To switch the tips off for this plugin, add to `config/config.ini.php`:
 The same line in the section `[FeinwerkMarketplaceConnector]` switches them off for all Feinwerk plugins. Recent
 versions of the Feinwerk Marketplace Connector also have the setting "Show notes on other Feinwerk offers".
 
+## Privacy features
+
+- **Deletes like Matomo's GDPR tool:** visits are removed with Matomo's own routine for deleting data subjects, from
+  all of Matomo's raw data tables, including those of other plugins. Nothing is copied or exported before deleting.
+- **What the history keeps:** for each deletion the websites, the date range, the segment, the status, the number of
+  deleted rows and the login of the person who started it. The segment is kept as entered: if it names an IP address
+  or a user ID, that stays in the history and in the activity log. When a user is deleted in Matomo, their login is
+  removed from the history. Uninstalling the plugin removes the history.
+- **Activity log:** with Matomo's Activity Log plugin, finished, failed and cancelled deletions are recorded there.
+- **Feedback only on request:** the plugin sends something to Feinwerk only when a user clicks a thumb below the admin
+  page, and then only the fields listed under "Feedback and support"; `feedback = 0` switches it off.
+- **Tips without tracking:** the tips load nothing from other servers and set no cookies. Their links carry campaign
+  parameters, so Feinwerk sees which tip was clicked once someone follows a link. `promotions = 0` switches them off
+  (see "Tips from Feinwerk").
+
 ## License
 
 GPL v3 or later
