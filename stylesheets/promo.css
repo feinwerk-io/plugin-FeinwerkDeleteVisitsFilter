@@ -28,6 +28,55 @@
     color: var(--theme-color-text-lighter, #646464);
 }
 
+/* the Feinwerk Plugins logo at the start of the tip line (Peter, 2026-11-17: "feinwerk logo immer dabei"), at text
+   height; its colours and dark variants come from stylesheets/feinwerklogo.css. On narrow screens only the round mark (a
+   media query: a size container would need containment, which can collapse the line in another plugin's layout); the
+   sentence shortens as before. */
+.fwpromo-line .fwlogo {
+    flex: none;
+    gap: 4px;
+    align-self: center;
+}
+
+/* only the round mark when the line is too short for the word mark (javascripts/promo.js) */
+.fwpromo-line--compact .fwlogo .fwlogo__word {
+    display: none;
+}
+
+/* everything stays inside the line, also with an older promo.js that knows no compact line: the sentence gives way
+   first, then the logo, the link last (with an ellipsis) */
+.fwpromo-line[data-fwpromo-ready] .fwpromo-line__text {
+    flex-shrink: 1000;
+}
+
+.fwpromo-line[data-fwpromo-ready] .fwlogo {
+    flex: 0 10 auto;
+    min-width: 14px;
+    overflow: hidden;
+}
+
+.fwpromo-line[data-fwpromo-ready] .fwpromo-line__link {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fwpromo-line .fwlogo .fwlogo__mark {
+    width: 14px;
+    height: 14px;
+}
+
+.fwpromo-line .fwlogo .fwlogo__word {
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    .fwpromo-line .fwlogo .fwlogo__word {
+        display: none;
+    }
+}
+
 .fwpromo-line__text {
     min-width: 0;
     overflow: hidden;
@@ -48,6 +97,19 @@
    right edge. The attribute selector outranks the "margin-left: auto" of older kit copies. */
 .fwpromo-line[data-fwpromo-placement="line"] .fwpromo-line__dismiss {
     margin-left: 0;
+}
+
+/* Other plugins' CSS may style the tip line without the ready attribute, for example `.fwpromo-line { position:
+   relative; padding-right: 24px }` with an absolutely placed hide control at the right edge (Tracking Spam Score 5.0.1,
+   seen on stats 2026-11-15). In Matomo's merged CSS that moves every plugin's × away from the link; these rules outrank
+   such class-only rules in any load order, so the × stays right after the link. */
+.fwpromo-line[data-fwpromo-ready] {
+    position: static;
+    padding: 0;
+}
+
+.fwpromo-line[data-fwpromo-ready] .fwpromo-line__dismiss {
+    position: static;
 }
 
 /* the link, and the Feinwerk logo at the end of the row (templates/_feinwerkLogo.twig) */

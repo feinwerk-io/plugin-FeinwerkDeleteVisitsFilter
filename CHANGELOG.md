@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.4
+
+- The tip below the admin page also points to the Feinwerk Connector on the Matomo Marketplace while it is not installed and this Matomo can install plugins from its Marketplace (not in Matomo for WordPress, where it cannot install plugins yet).
+- The tip below the admin page starts with the Feinwerk Plugins logo; on narrow screens only its round mark.
+- The hide control of the tip below the admin page stays right after its link, also next to other Feinwerk plugins.
+
 ## 5.0.3
 
 - "1 website added." instead of "1 websites added." when a name filter adds a single website.

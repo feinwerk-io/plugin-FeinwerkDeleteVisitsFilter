@@ -29,8 +29,15 @@ background until they are done.
   template" starts a new deletion with the same settings, "Try again" continues a failed one.
 - **Console and API** for scripts and cron jobs, light and dark mode, English and German.
 
-Documentation: [plugins.feinwerk.io](https://plugins.feinwerk.io/en/docs/plugins/FeinwerkDeleteVisitsFilter).
-Questions and ideas: support@feinwerk.io.
+**Works with Feinwerk Tracking Spam Score and Feinwerk Sentinel:** find the junk first. Tracking Spam Score finds spam
+networks and bot traffic, and Sentinel (free) alerts you when tracking breaks.
+
+**Get started:** open *Administration › Diagnostic › Delete Visits*, choose websites, a date range and a segment, then
+*Check matches*.
+
+**More Plugins for Matomo by Feinwerk:** install [Feinwerk Connector](https://plugins.matomo.org/FeinwerkMarketplaceConnector)
+from the Matomo Marketplace to discover, install and update all Feinwerk plugins, free and paid, right in your Matomo.
+Documentation: [plugins.feinwerk.io](https://plugins.feinwerk.io/en/plugins/FeinwerkDeleteVisitsFilter).
 
 ## Requirements
 
@@ -75,7 +82,7 @@ migrated. The previous console command `deletevisitsfilter:delete` keeps working
 
 ### Admin page
 
-**Administration → Diagnostics → Delete Visits** has two tabs, "Delete" and "History".
+**Administration › Diagnostic › Delete Visits** has two tabs, "Delete" and "History".
 
 1. **Websites**: one website, several websites (also all whose name contains a text) or all websites.
 2. **Date range**: a preset such as "last 30 days" or "last year", or a range from the calendar.
@@ -154,8 +161,11 @@ results, email reports or embedded widgets. You see at most one tip per place an
 - one box at the end of the Campaigns, Ecommerce overview and Goals overview reports.
 
 A tip for a Feinwerk plugin you already have installed is not shown. "×" hides a tip for 30 days in your browser. The
-tips are part of the plugin: nothing is loaded from outside and nothing is sent. Links open feinwerk.io pages in a new
-tab and carry only the campaign parameters `mtm_campaign`, `mtm_source` and `mtm_content`.
+tips are part of the plugin: nothing is loaded from outside and nothing is sent. Links to feinwerk.io pages open in a
+new tab and carry only the campaign parameters `mtm_campaign`, `mtm_source` and `mtm_content`. The tip for Feinwerk
+Connector takes a super user to the connector in Matomo's own Marketplace (same tab, no campaign parameters) and is
+shown to super users only when this Matomo can install plugins from there; admins go to its page on plugins.matomo.org.
+This tip is not shown inside Matomo for WordPress.
 
 To switch the tips off for this plugin, add to `config/config.ini.php`:
 
@@ -163,7 +173,8 @@ To switch the tips off for this plugin, add to `config/config.ini.php`:
     promotions = 0
 
 The same line in the section `[FeinwerkMarketplaceConnector]` switches them off for all Feinwerk plugins. Recent
-versions of the Feinwerk Marketplace Connector also have the setting "Show notes on other Feinwerk offers".
+versions of the Feinwerk Marketplace Connector (install it from Matomo's Marketplace) also have the setting "Show notes
+on other Feinwerk offers".
 
 ## Privacy features
 
@@ -176,9 +187,36 @@ versions of the Feinwerk Marketplace Connector also have the setting "Show notes
 - **Activity log:** with Matomo's Activity Log plugin, finished, failed and cancelled deletions are recorded there.
 - **Feedback only on request:** the plugin sends something to Feinwerk only when a user clicks a thumb below the admin
   page, and then only the fields listed under "Feedback and support"; `feedback = 0` switches it off.
-- **Tips without tracking:** the tips load nothing from other servers and set no cookies. Their links carry campaign
-  parameters, so Feinwerk sees which tip was clicked once someone follows a link. `promotions = 0` switches them off
-  (see "Tips from Feinwerk").
+- **Tips without tracking:** the tips load nothing from other servers and set no cookies. Links to feinwerk.io carry
+  campaign parameters, so Feinwerk sees which tip was clicked once someone follows such a link. `promotions = 0`
+  switches them off (see "Tips from Feinwerk").
+
+## FAQ
+
+**Can deleted visits be restored?**
+No. Visits are removed from Matomo's raw data tables for good. Make a database backup before large deletions.
+
+**How is this different from Matomo's GDPR tool?**
+It uses the same deletion routine, but selects visits by segment, date range and website instead of one person at a
+time.
+
+**Are my reports corrected?**
+Yes. The affected days are marked for processing again, including roll-up websites; the next archiving run rebuilds the
+reports.
+
+**What happens if I close the page?**
+The deletion continues: an hourly background task goes on where it stopped (unless a super user switched background
+processing off in the settings), and very large deletions can run on the console without a time limit.
+
+**Who can delete visits?**
+Super users only.
+
+**Does a segment on pages delete only those pages?**
+No. A segment on page or conversion data deletes the whole matching visit.
+
+**Where do I find more Feinwerk plugins?**
+Install Feinwerk Connector from the Matomo Marketplace. It lists all Plugins for Matomo by Feinwerk, free and paid, and
+installs and updates them with one click.
 
 ## License
 

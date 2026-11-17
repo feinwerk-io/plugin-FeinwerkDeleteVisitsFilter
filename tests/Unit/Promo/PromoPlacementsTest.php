@@ -65,6 +65,10 @@ class PromoPlacementsTest extends TestCase
         $placements = array_merge([PromoPlacements::BANNER], array_keys(PromoPlacements::PAGES));
         $used = [];
         foreach (PromoLine::MESSAGES as $id => $message) {
+            if ($message['placement'] === 'line') {
+                self::assertSame(PromoLine::CONNECTOR_MESSAGE, $id, 'only the connector message is tip line only');
+                continue;
+            }
             self::assertContains($message['placement'], $placements, $id);
             $used[] = $message['placement'];
         }

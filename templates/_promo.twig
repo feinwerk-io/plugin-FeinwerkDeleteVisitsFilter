@@ -3,11 +3,15 @@
    (Peter, 2026-11-13, Page Filter Report docs/footer.md): always exactly one line, the sentence ends with an ellipsis
    where it does not fit (full sentence in the DOM and in the title); link and hide stay visible. The banner and the
    context boxes (templates/_promoBox.twig) keep label and title.
-   promo = PromoLine::variables() {id, placement, title, text, link, url, dismissDays}; hiding for 30 days and once per
-   page in javascripts/promo.js. #}
-<div class="fwpromo-line" data-fwpromo-id="{{ promo.id }}" data-fwpromo-placement="line" data-fwpromo-days="{{ promo.dismissDays }}">
+   promo = PromoLine::variables() {id, placement, title, text, link, url, external, note, dismissDays, demo}; hiding for
+   30 days and once per page in javascripts/promo.js. A link inside Matomo (the connector in the instance's own
+   Marketplace) opens in the same tab; the admin note of the connector message is the link's title (one line).
+   The Feinwerk Plugins logo starts the line (Peter, 2026-11-17: "werbung um footer verbessern. feinwerk logo immer
+   dabei"), at text height; on a narrow line only its round mark (stylesheets/promo.css). #}
+<div class="fwpromo-line" data-fwpromo-id="{{ promo.id }}" data-fwpromo-placement="line" data-fwpromo-days="{{ promo.dismissDays }}"{% if promo.demo|default(false) %} data-fwpromo-demo="1"{% endif %}>
+    {% include '@FeinwerkDeleteVisitsFilter/_feinwerkLogo.twig' %}
     <span class="fwpromo-line__text" title="{{ promo.text }}">{{ promo.text }}</span>
-    <a class="fwpromo-line__link" href="{{ promo.url }}" target="_blank" rel="noopener">{{ promo.link }}</a>
+    <a class="fwpromo-line__link" href="{{ promo.url }}"{% if promo.external|default(true) %} target="_blank" rel="noopener"{% endif %}{% if promo.note|default('') %} title="{{ promo.note }}"{% endif %}>{{ promo.link }}</a>
     <button type="button" class="fwpromo-line__dismiss fwpromo-dismiss" title="{{ 'FeinwerkDeleteVisitsFilter_PromoDismiss'|translate }}"
             aria-label="{{ 'FeinwerkDeleteVisitsFilter_PromoDismiss'|translate }}"><span aria-hidden="true">&times;</span></button>
 </div>

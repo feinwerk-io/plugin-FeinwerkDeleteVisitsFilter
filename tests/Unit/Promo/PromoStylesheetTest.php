@@ -99,6 +99,25 @@ class PromoStylesheetTest extends TestCase
 
         return [$ids, $classes + $attributes + $pseudo];
     }
+
+    /**
+     * Footer A keeps the × right after the link although another plugin's merged CSS positions it absolutely at the
+     * right edge of a padded tip line (Tracking Spam Score 5.0.1: `.fwpromo-line { position: relative; padding-right:
+     * 24px }`, `.fwpromo-line__dismiss { position: absolute; top: 0; right: 0 }`). The defence must weigh more than
+     * those class-only rules, so the load order does not matter.
+     */
+    public function test_footer_a_outranks_foreign_positioning_of_the_hide_control(): void
+    {
+        $css = (string) file_get_contents(__DIR__ . '/../../../stylesheets/promo.css');
+        $css = (string) preg_replace('~/\*.*?\*/~s', '', $css);
+
+        $this->assertSame(1, preg_match('/(^|\})\s*\.fwpromo-line\[data-fwpromo-ready\]\s*\{[^}]*position:\s*static[^}]*\}/', $css));
+        $this->assertSame(1, preg_match('/(^|\})\s*\.fwpromo-line\[data-fwpromo-ready\]\s*\{[^}]*padding:\s*0\s*;[^}]*\}/', $css));
+        $this->assertSame(1, preg_match('/(^|\})\s*\.fwpromo-line\[data-fwpromo-ready\]\s+\.fwpromo-line__dismiss\s*\{[^}]*position:\s*static/', $css));
+        $this->assertGreaterThan(self::weight('.fwpromo-line'), self::weight('.fwpromo-line[data-fwpromo-ready]'));
+        $this->assertGreaterThan(self::weight('.fwpromo-line__dismiss'), self::weight('.fwpromo-line[data-fwpromo-ready] .fwpromo-line__dismiss'));
+    }
+
     /** The tip line's link keeps link colour and underline; the box foot's flex rule never catches it (merged CSS of all plugins). */
     public function test_the_tip_link_is_a_link_not_a_flex_row(): void
     {

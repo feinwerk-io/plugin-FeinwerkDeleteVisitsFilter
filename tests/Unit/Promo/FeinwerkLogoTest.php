@@ -30,14 +30,25 @@ class FeinwerkLogoTest extends TestCase
         self::assertSame(0, preg_match('/\burl\(|@import|@font-face/', $this->file('stylesheets/feinwerklogo.css')));
     }
 
-    public function test_banner_and_boxes_show_it_the_tip_line_and_the_feedback_row_do_not(): void
+    /** Peter, 2026-11-17: "feinwerk logo immer dabei": also at the start of the tip line; the feedback row stays without. */
+    public function test_banner_boxes_and_the_tip_line_show_it_the_feedback_row_does_not(): void
     {
-        foreach (['templates/_promoBox.twig'] as $with) {
+        foreach (['templates/_promoBox.twig', 'templates/_promo.twig'] as $with) {
             self::assertSame(1, substr_count($this->file($with), self::INCLUDE), $with);
         }
-        foreach (['templates/_promo.twig', 'vue/src/Manage/FeedbackBar.vue'] as $without) {
-            self::assertStringNotContainsString('_feinwerkLogo', $this->file($without), $without);
-        }
+        $line = $this->file('templates/_promo.twig');
+        self::assertLessThan(strpos($line, 'fwpromo-line__text'), strpos($line, self::INCLUDE), 'the logo starts the line');
+        self::assertStringNotContainsString('_feinwerkLogo', $this->file('vue/src/Manage/FeedbackBar.vue'));
+    }
+
+    /** In the tip line at text height, and on narrow screens only the round mark (no size containment on the line). */
+    public function test_in_the_tip_line_at_text_height_and_only_the_mark_on_narrow_screens(): void
+    {
+        $css = (string) preg_replace('~/\*.*?\*/~s', '', $this->file('stylesheets/promo.css'));
+
+        self::assertSame(0, preg_match('/container-type/', $css), 'containment could collapse the line elsewhere');
+        self::assertSame(1, preg_match('/\.fwpromo-line \.fwlogo \.fwlogo__mark\s*\{[^}]*width:\s*14px[^}]*height:\s*14px/', $css));
+        self::assertSame(1, preg_match('/@media \(max-width:\s*600px\)\s*\{\s*\.fwpromo-line \.fwlogo \.fwlogo__word\s*\{\s*display:\s*none/', $css));
     }
 
     public function test_light_and_dark_use_the_colours_of_the_store_logo(): void

@@ -54,7 +54,10 @@ final class PromoPlacements
      */
     public static function messageFor(string $placement, callable $isInstalled): ?string
     {
-        foreach (PromoLine::candidates($isInstalled, true) as $id) {
+        if ($placement === 'line') {
+            return null; // the tip line is no box: tip-line-only messages (connector) never fill one
+        }
+        foreach (PromoLine::candidates($isInstalled, true, PromoLine::demo()) as $id) {
             if ((PromoLine::MESSAGES[$id]['placement'] ?? null) === $placement) {
                 return $id;
             }
@@ -106,7 +109,7 @@ final class PromoPlacements
             if ($id === null || !self::claim(self::BANNER)) {
                 return;
             }
-            $out .= self::render(PromoLine::variables($id, PromoLine::language(), [Piwik::class, 'translate'], self::BANNER));
+            $out .= self::render(PromoLine::variables($id, PromoLine::language(), [Piwik::class, 'translate'], self::BANNER, PromoLine::demo()));
         } catch (\Throwable $e) {
             // a promotion never breaks Matomo's admin home
         }
@@ -197,12 +200,13 @@ final class PromoPlacements
             ) {
                 return '';
             }
+            $demo = PromoLine::demo();
             $product = PromoLine::MESSAGES[$id]['product'];
-            if ($product !== null && PromoLine::isInstalled($product)) {
+            if (!$demo && $product !== null && PromoLine::isInstalled($product)) {
                 return '';
             }
 
-            return self::render(PromoLine::variables($id, PromoLine::language(), [Piwik::class, 'translate'], $placement));
+            return self::render(PromoLine::variables($id, PromoLine::language(), [Piwik::class, 'translate'], $placement, $demo));
         } catch (\Throwable $e) {
             return '';
         }

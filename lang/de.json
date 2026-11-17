@@ -180,6 +180,10 @@
         "PromoCapiTitle": "Umsätze für Ihre Werbekonten",
         "PromoCapiText": "Feinwerk Conversions API sendet Bestellungen und Ziele aus Matomo serverseitig an Google Ads, Meta, LinkedIn, X und Microsoft Advertising, nur mit Einwilligung und ohne Werbepixel auf Ihrer Website.",
         "PromoCapiLink": "Feinwerk Conversions API ansehen",
+        "PromoConnectorTitle": "Feinwerk Connector",
+        "PromoConnectorText": "Exklusive Plugins for Matomo von Feinwerk, kostenlos, Freemium und Premium:",
+        "PromoConnectorLink": "Feinwerk Connector im Matomo Marketplace installieren",
+        "PremiumAskSuperUser": "Installieren kann es Ihr %s.",
         "PromoSentinelTitle": "Wenn Ziele plötzlich schweigen",
         "PromoSentinelText": "Das kostenlose Plugin Feinwerk Sentinel überwacht Ihre Matomo-Daten rund um die Uhr und meldet per E-Mail, Slack oder Teams, sobald Ziele ausbleiben oder das Tracking ausfällt.",
         "PromoSentinelLink": "Feinwerk Sentinel ansehen"

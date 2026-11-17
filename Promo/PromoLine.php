@@ -40,6 +40,18 @@ final class PromoLine
     private const CONNECTOR_SWITCH = '\\Piwik\\Plugins\\FeinwerkMarketplaceConnector\\Promotions';
 
     /**
+     * Demo mode for Feinwerk's test instances (Peter, 2026-11-16: "kannst du einen demo modus einführen, damit stats6
+     * auch wieder die werbung zeigt?", docs/promotions.md "Demo mode for test instances"): `promotions_demo = 1` in
+     * [FeinwerkMarketplaceConnector] of config.ini.php, also without the connector. Every off switch still wins and the
+     * audience stays admins and super users; demo only lifts the conditions (installed products, ecommerce) and keeps a
+     * hidden notice away for the browser session instead of 30 days.
+     */
+    public const DEMO = 'promotions_demo';
+
+    /** @var bool|null demo mode of this request */
+    private static $demo = null;
+
+    /**
      * message id => what it says and where it leads. product: technical name of an advertised plugin (shown only while
      * it is not installed), null for a website. urls: landing page per language, en is the fallback. placement: where a
      * free plugin shows it besides the tip line (PromoPlacements::PLACEMENTS). ecommerce: only for websites with
@@ -79,6 +91,18 @@ final class PromoLine
             'placement' => 'ecommerce',
             'ecommerce' => true,
         ],
+        // the Feinwerk Marketplace Connector from the Matomo Marketplace (Peter, 2026-11-11, copy approved 2026-11-12,
+        // started 2026-11-16, docs/promotions.md "Planned message connector"): tip line only, about every second time
+        // (choose()), its link depends on the user (connectorUrl()), so it has no fixed urls
+        'connector' => [
+            'title' => 'FeinwerkDeleteVisitsFilter_PromoConnectorTitle',
+            'text' => 'FeinwerkDeleteVisitsFilter_PromoConnectorText',
+            'link' => 'FeinwerkDeleteVisitsFilter_PromoConnectorLink',
+            'urls' => [],
+            'product' => 'FeinwerkMarketplaceConnector',
+            'placement' => 'line',
+            'ecommerce' => false,
+        ],
         'sentinel' => [
             'title' => 'FeinwerkDeleteVisitsFilter_PromoSentinelTitle',
             'text' => 'FeinwerkDeleteVisitsFilter_PromoSentinelText',
@@ -95,6 +119,9 @@ final class PromoLine
 
     /** paid plugins prefer this message for their tip line (docs/promotions.md); free plugins rotate (null) */
     public const PREFERRED = null;
+
+    /** the message for the Feinwerk Marketplace Connector (shown about every second time while it is not installed) */
+    public const CONNECTOR_MESSAGE = 'connector';
 
     /**
      * The off switches, in this order (Page Filter Report's docs/promo-kit.md, "Off switches"): promotions = 0 in the plugin's own config
@@ -118,6 +145,20 @@ final class PromoLine
         } catch (\Throwable $e) {
             return true;
         }
+    }
+
+    /**
+     * Whether this Matomo runs inside WordPress (Matomo for WordPress: the WordPress constant ABSPATH plus the Matomo
+     * plugin's matomo_add_plugin(), as in PluginLead's test report of 2026-11-17).
+     */
+    public static function isWordPressBy(bool $hasAbsPath, bool $hasMatomoAddPlugin): bool
+    {
+        return $hasAbsPath && $hasMatomoAddPlugin;
+    }
+
+    public static function isWordPress(): bool
+    {
+        return self::isWordPressBy(defined('ABSPATH'), function_exists('matomo_add_plugin'));
     }
 
     public static function enabled(): bool
@@ -188,10 +229,24 @@ final class PromoLine
      * @param callable(string): bool $isInstalled
      * @return string[] message ids in the order of MESSAGES
      */
-    public static function candidates(callable $isInstalled, bool $isEcommerceSite = false): array
-    {
+    public static function candidates(
+        callable $isInstalled,
+        bool $isEcommerceSite = false,
+        bool $demo = false,
+        bool $wordpress = false
+    ): array {
+        // Matomo for WordPress (Peter, 2026-11-17: "Dort nicht werben"): the connector can neither install nor update
+        // there yet, so no connector message, in demo too
+        $skip = $wordpress ? [self::CONNECTOR_MESSAGE] : [];
+        if ($demo) {
+            // demo: the whole rotation, whatever is installed or tracked
+            return array_values(array_diff(array_keys(self::MESSAGES), $skip));
+        }
         $ids = [];
         foreach (self::MESSAGES as $id => $message) {
+            if (in_array($id, $skip, true)) {
+                continue;
+            }
             if (!empty($message['ecommerce']) && !$isEcommerceSite) {
                 continue;
             }
@@ -217,8 +272,51 @@ final class PromoLine
         if (self::PREFERRED !== null && in_array(self::PREFERRED, $candidates, true)) {
             return self::PREFERRED;
         }
+        // the connector message about every second time (Peter: "vermehrt"), the others in turn on the other days
+        if (in_array(self::CONNECTOR_MESSAGE, $candidates, true)) {
+            $others = array_values(array_diff($candidates, [self::CONNECTOR_MESSAGE]));
+            if ($day % 2 === 0 || $others === []) {
+                return self::CONNECTOR_MESSAGE;
+            }
+
+            return $others[intdiv($day, 2) % count($others)];
+        }
 
         return array_values($candidates)[$day % count($candidates)];
+    }
+
+    /**
+     * Where the connector message leads (connector session, checked on Matomo 5.14.2 and 6.0.0-rc1):
+     * - a super user whose Matomo may install from its Marketplace: the connector's page there, inside Matomo (no
+     *   campaign parameters; the popover hash works from Matomo 5.0 to 6);
+     * - an admin: the connector's page on plugins.matomo.org, with a note that the super user can install it.
+     * A super user without a usable Marketplace gets no connector message at all (lineFor()).
+     *
+     * @return array{0: string, 1: bool} url, external
+     */
+    public static function connectorUrl(bool $isSuperUser, bool $marketplaceUsable): array
+    {
+        if ($isSuperUser && $marketplaceUsable) {
+            return ['index.php?module=Marketplace&action=overview#?popover=browsePluginDetail%243AFeinwerkMarketplaceConnector', false];
+        }
+        return ['https://plugins.matomo.org/FeinwerkMarketplaceConnector?mtm_campaign=plugin-promo&mtm_source=' . self::PLUGIN
+            . '&mtm_content=' . self::CONNECTOR_MESSAGE, true];
+    }
+
+    /**
+     * Whether this Matomo lets a super user install from its Marketplace: Marketplace on, internet features on, plugin
+     * administration on (all three exist at Matomo 5.0). False on any doubt.
+     */
+    public static function marketplaceUsable(): bool
+    {
+        try {
+            return class_exists('Piwik\\Plugins\\Marketplace\\Marketplace')
+                && \Piwik\Plugins\Marketplace\Marketplace::isMarketplaceEnabled()
+                && \Piwik\SettingsPiwik::isInternetEnabled()
+                && \Piwik\Plugins\CorePluginsAdmin\CorePluginsAdmin::isPluginsAdminEnabled();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /** Landing page in the user's language (German or English) with the campaign parameters for Feinwerk's Matomo. */
@@ -235,14 +333,31 @@ final class PromoLine
      * Variables of templates/_promo.twig and templates/_promoBox.twig. Pure.
      *
      * @param callable(string): string $translate
-     * @return array{id: string, placement: string, title: string, text: string, link: string, url: string, dismissDays: int}
+     * @param array{superUser: bool, marketplace: bool}|null $user for the connector message: is the user a super user,
+     *                                                         may this Matomo install from its Marketplace (null: neither)
+     * @return array{id: string, placement: string, title: string, text: string, link: string, url: string, external: bool, note: string, dismissDays: int, demo: bool}
      */
-    public static function variables(string $id, string $language, callable $translate, string $placement = 'line'): array
-    {
+    public static function variables(
+        string $id,
+        string $language,
+        callable $translate,
+        string $placement = 'line',
+        bool $demo = false,
+        ?array $user = null
+    ): array {
         if (!isset(self::MESSAGES[$id])) {
             throw new \InvalidArgumentException('message');
         }
         $message = self::MESSAGES[$id];
+        $url = $id === self::CONNECTOR_MESSAGE ? null : self::url($id, $language);
+        $external = true;
+        $note = '';
+        if ($url === null) {
+            $superUser = (bool) ($user['superUser'] ?? false);
+            [$url, $external] = self::connectorUrl($superUser, (bool) ($user['marketplace'] ?? false));
+            // an admin cannot install plugins: who can (the German sentence takes Matomo's own word)
+            $note = $superUser ? '' : (string) $translate('FeinwerkDeleteVisitsFilter_PremiumAskSuperUser');
+        }
 
         return [
             'id' => $id,
@@ -250,9 +365,55 @@ final class PromoLine
             'title' => $translate($message['title']),
             'text' => $translate($message['text']),
             'link' => $translate($message['link']),
-            'url' => self::url($id, $language),
-            'dismissDays' => self::DISMISS_DAYS,
+            'url' => $url,
+            'external' => $external,
+            'note' => $note,
+            'dismissDays' => self::dismissDays($demo),
+            'demo' => $demo,
         ];
+    }
+
+    /**
+     * The demo switch, read like the connector's Promotions::demo(): 1, on, yes and true (any case, Matomo's INI reader
+     * may also hand over PHP true or 1) are on, everything else is off.
+     *
+     * @param array<string, mixed> $connectorSection [FeinwerkMarketplaceConnector] of config.ini.php
+     */
+    public static function demoBy(array $connectorSection): bool
+    {
+        $value = $connectorSection[self::DEMO] ?? null;
+        if ($value === true || $value === 1) {
+            return true;
+        }
+        if (!is_string($value) && !is_int($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'on', 'yes', 'true'], true);
+    }
+
+    /** Demo mode for this request, read once. Only asked behind enabled(): an off switch beats it. */
+    public static function demo(): bool
+    {
+        if (self::$demo === null) {
+            try {
+                $connector = Config::getInstance()->{self::CONNECTOR};
+                self::$demo = self::demoBy(is_array($connector) ? $connector : []);
+            } catch (\Throwable $e) {
+                self::$demo = false;
+            }
+        }
+
+        return self::$demo;
+    }
+
+    /**
+     * How long a hidden notice stays away: 30 days, in demo 0 (the kit's script then keeps it away for the browser
+     * session only, older copies of it on the page only).
+     */
+    public static function dismissDays(bool $demo): int
+    {
+        return $demo ? 0 : self::DISMISS_DAYS;
     }
 
     /** Whether the current user may see promotions at all: switches on, admin of a website or super user. */
@@ -278,10 +439,51 @@ final class PromoLine
         if (!self::shownToCurrentUser()) {
             return null;
         }
-        $isEcommerceSite = $idSite > 0 && Site::isEcommerceEnabledFor($idSite);
-        $id = self::choose(self::candidates([self::class, 'isInstalled'], $isEcommerceSite), intdiv(time(), 86400));
+        $superUser = Piwik::hasUserSuperUserAccess();
 
-        return $id === null ? null : self::variables($id, self::language(), [Piwik::class, 'translate']);
+        return self::lineFor(
+            [
+                'day' => intdiv(time(), 86400),
+                'ecommerce' => $idSite > 0 && Site::isEcommerceEnabledFor($idSite),
+                'demo' => self::demo(),
+                'wordpress' => self::isWordPress(),
+                'superUser' => $superUser,
+                'marketplace' => $superUser && self::marketplaceUsable(),
+            ],
+            [self::class, 'isInstalled'],
+            [Piwik::class, 'translate'],
+            self::language()
+        );
+    }
+
+    /**
+     * The tip line for one user and website, null when none is left. Pure, so current()'s decisions are tested:
+     * - Matomo for WordPress: no connector message (Peter, 2026-11-17, "Dort nicht werben");
+     * - a super user whose Matomo cannot install from its Marketplace gets no connector message either (Peter,
+     *   2026-11-17, "Dann keine Nachricht": a ZIP download would promise what the instance cannot do);
+     * - the admin note takes Matomo's own word for the super user in the German sentence.
+     *
+     * @param array{day: int, ecommerce: bool, demo: bool, wordpress: bool, superUser: bool, marketplace: bool} $env
+     * @param callable(string): bool $isInstalled
+     * @param callable $translate like Piwik::translate(string $key, array $args = [])
+     */
+    public static function lineFor(array $env, callable $isInstalled, callable $translate, string $language): ?array
+    {
+        $candidates = self::candidates($isInstalled, $env['ecommerce'], $env['demo'], $env['wordpress']);
+        if ($env['superUser'] && !$env['marketplace']) {
+            $candidates = array_values(array_diff($candidates, [self::CONNECTOR_MESSAGE]));
+        }
+        $id = self::choose($candidates, $env['day']);
+        if ($id === null) {
+            return null;
+        }
+        $user = $id === self::CONNECTOR_MESSAGE ? ['superUser' => $env['superUser'], 'marketplace' => $env['marketplace']] : null;
+
+        return self::variables($id, $language, static function (string $key) use ($translate): string {
+            return $key === 'FeinwerkDeleteVisitsFilter_PremiumAskSuperUser'
+                ? (string) $translate($key, [(string) $translate('Installation_SuperUser')])
+                : (string) $translate($key);
+        }, 'line', $env['demo'], $user);
     }
 
     /** The line as HTML for the footer of a report view; '' where it is not shown and on any error (never breaks a report). */
