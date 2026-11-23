@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.5
+
+- Super users no longer see the Feinwerk Connector tip where Matomo's Marketplace offers only a download instead of its install button (automatic updates switched off or a multi-server setup).
+- The plugin is now also available in French, Spanish and Italian.
+- Super users can install and activate the free Feinwerk Connector with one click under Administration, Feinwerk Plugins, while it is not active; `connector_installer = 0` hides the entry.
+- The Feinwerk Connector link in the tip below the admin page opens in the same tab when it leads a super user into their own Matomo Marketplace.
+
 ## 5.0.4
 
 - The tip below the admin page also points to the Feinwerk Connector on the Matomo Marketplace while it is not installed and this Matomo can install plugins from its Marketplace (not in Matomo for WordPress, where it cannot install plugins yet).

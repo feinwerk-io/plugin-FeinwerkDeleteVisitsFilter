@@ -27,7 +27,7 @@ background until they are done.
   routine as Matomo's GDPR tool, and the affected days are processed again automatically.
 - **History:** every deletion with who started it, websites, segment, status, deleted visits and duration. "Use as
   template" starts a new deletion with the same settings, "Try again" continues a failed one.
-- **Console and API** for scripts and cron jobs, light and dark mode, English and German.
+- **Console and API** for scripts and cron jobs, light and dark mode, English, German, French, Spanish and Italian.
 
 **Works with Feinwerk Tracking Spam Score and Feinwerk Sentinel:** find the junk first. Tracking Spam Score finds spam
 networks and bot traffic, and Sentinel (free) alerts you when tracking breaks.
@@ -149,6 +149,22 @@ with `jobs --cancel=<id>`. Without a terminal (cron, scripts) `delete` requires 
 | `FeinwerkDeleteVisitsFilter.deleteVisits` | Deprecated: delete within one request |
 
 `idSites` accepts one ID, a comma-separated list or `all`. Send `token_auth` via POST.
+
+## Installing the Feinwerk Connector
+
+The free Feinwerk Connector installs, updates and licenses Feinwerk plugins inside Matomo. The easiest way to get it is
+the Matomo Marketplace. While it is not active, super users also find a section "Feinwerk Plugins" in Matomo's
+Administration with the entry "Install Feinwerk Connector" ("Activate Feinwerk Connector" when its files are already
+there). One click installs it from the Matomo Marketplace and activates it; as with every plugin install, Matomo first
+asks for your password. Where Matomo cannot install from its Marketplace (Marketplace, internet features, plugin
+administration or automatic updates switched off, or a multi-server setup), the page explains the manual way instead. In Matomo for WordPress the connector is
+installed as a WordPress plugin through Matomo Analytics, Marketplace. The connector needs PHP 8.1. Nothing is
+downloaded before you click. To hide the entry, add to `config/config.ini.php`:
+
+    [FeinwerkDeleteVisitsFilter]
+    connector_installer = 0
+
+The same line in the section `[FeinwerkMarketplaceConnector]` hides it for all Feinwerk plugins.
 
 ## Tips from Feinwerk
 

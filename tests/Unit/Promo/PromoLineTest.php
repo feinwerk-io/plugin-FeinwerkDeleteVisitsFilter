@@ -117,8 +117,8 @@ class PromoLineTest extends TestCase
         self::assertSame('[FeinwerkDeleteVisitsFilter_PromoConnectorLink]', $admin['link']);
 
         $line = (string) file_get_contents(__DIR__ . '/../../../templates/_promo.twig');
-        self::assertStringContainsString('{% if promo.external|default(true) %} target="_blank" rel="noopener"{% endif %}', $line);
-        self::assertStringContainsString('{% if promo.note|default(\'\') %} title="{{ promo.note }}"{% endif %}', $line);
+        self::assertStringContainsString('{% if promo.external ?? true %} target="_blank" rel="noopener"{% endif %}', $line);
+        self::assertStringContainsString('{% if promo.note ?? \'\' %} title="{{ promo.note }}"{% endif %}', $line);
     }
 
     /** Matomo for WordPress (Peter, 2026-11-17: "Dort nicht werben"): no connector message there, in demo too. */
@@ -170,6 +170,20 @@ class PromoLineTest extends TestCase
                 $line = PromoLine::lineFor(['day' => $day] + $without, $nothing, $translate, 'de');
                 self::assertNotSame('connector', $line['id'] ?? null, $case . ', day ' . $day);
             }
+        }
+    }
+
+    /**
+     * Regression (release review 2026-11-20): without automatic updates (enable_auto_update = 0 or
+     * multi_server_environment) Matomo's Marketplace offers a ZIP download instead of Install, the case Peter ruled out
+     * ("Dann keine Nachricht"). The connector link into the Marketplace needs all four of Matomo's conditions.
+     */
+    public function test_the_marketplace_counts_as_usable_only_where_matomo_offers_its_install_button(): void
+    {
+        $all = ['marketplace' => true, 'internet' => true, 'pluginsAdmin' => true, 'autoUpdate' => true];
+        self::assertTrue(PromoLine::marketplaceUsableBy($all));
+        foreach (array_keys($all) as $switch) {
+            self::assertFalse(PromoLine::marketplaceUsableBy([$switch => false] + $all), $switch);
         }
     }
 
@@ -252,7 +266,7 @@ class PromoLineTest extends TestCase
         self::assertSame([0, true], [$demo['dismissDays'], $demo['demo']]);
         foreach (['_promo.twig', '_promoBox.twig'] as $template) {
             self::assertStringContainsString(
-                '{% if promo.demo|default(false) %} data-fwpromo-demo="1"{% endif %}',
+                '{% if promo.demo ?? false %} data-fwpromo-demo="1"{% endif %}',
                 (string) file_get_contents(__DIR__ . '/../../../templates/' . $template),
                 $template
             );

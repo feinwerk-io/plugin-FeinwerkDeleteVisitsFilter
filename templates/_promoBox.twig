@@ -4,7 +4,7 @@
    widget too (a box placed inside another widget leaves it out, so only the box goes). The Feinwerk logo closes the last
    row as a quiet signature (templates/_feinwerkLogo.twig, docs/promotions.md "Feinwerk logo in banners"). #}
 <aside class="fwpromo-box{% if promo.placement == 'adminHome' %} fwpromo-box--banner{% endif %}"
-       data-fwpromo-id="{{ promo.id }}" data-fwpromo-placement="{{ promo.placement }}" data-fwpromo-days="{{ promo.dismissDays }}"{% if promo.demo|default(false) %} data-fwpromo-demo="1"{% endif %}
+       data-fwpromo-id="{{ promo.id }}" data-fwpromo-placement="{{ promo.placement }}" data-fwpromo-days="{{ promo.dismissDays }}"{% if promo.demo ?? false %} data-fwpromo-demo="1"{% endif %}
        {% if promo.placement != 'adminHome' %}data-fwpromo-widget="hide"{% endif %}
        aria-label="{{ 'FeinwerkDeleteVisitsFilter_PromoTip'|translate }}">
     <div class="fwpromo-box__body">
