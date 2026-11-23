@@ -1,0 +1,85 @@
+/*!
+ * Matomo - free/libre analytics platform
+ *
+ * @link    https://matomo.org
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
+ */
+
+// Shared colours and the dark-mode mixin of the admin page, imported by every stylesheet that needs them.
+//
+// Matomo compiles the stylesheets of all plugins into one; a single LESS error puts its whole UI into safe mode.
+// Matomo's own LESS variables and mixins differ between versions (5.3 lacks .inDarkMode() and the focus-ring,
+// light-border and placeholder colours, 5.11 the placeholder colour), so the stylesheets reference none of them: the
+// colours are Matomo's CSS custom properties, with the light values of Matomo 5.14 as fallback for versions without
+// them.
+// `lesscheck` (tests/dev-env.sh) compiles the stylesheets without Matomo's definitions.
+//
+// Import it with a plain `@import "…"`: Matomo rewrites only that form to its own paths, not `@import (reference)`.
+// It holds only variables and mixins with parameters, so importing it adds no rules; LESS imports it only once.
+
+@fwdvf-text: ~"var(--theme-color-text, #212121)";
+@fwdvf-text-light: ~"var(--theme-color-text-light, #444)";
+@fwdvf-text-lighter: ~"var(--theme-color-text-lighter, #646464)";
+@fwdvf-brand: ~"var(--theme-color-brand, #43a047)";
+@fwdvf-focus-ring: ~"var(--theme-color-focus-ring, #0969da)";
+// --theme-color-border-alternative replaces the deprecated --theme-color-border in newer Matomo versions.
+// Matomo 6: -border is the canonical border again (-border-alternative is a deprecated alias).
+@fwdvf-border: ~"var(--theme-color-border, #ccc)";
+@fwdvf-border-light: ~"var(--theme-color-border-light, #a9a399)";
+@fwdvf-background-base: ~"var(--theme-color-background-base, #f5f5f5)";
+@fwdvf-background-tiny: ~"var(--theme-color-background-tinyContrast, #f2f2f2)";
+
+// Error text and the delete button, in both modes; error text uses the lighter red in dark mode.
+// Matomo 6 status colours (core ThemeStyles: light and dark values of their own).
+@fwdvf-danger: ~"var(--theme-color-danger, #c0322e)";
+@fwdvf-danger-dark: @fwdvf-danger;
+// The delete button: white text on it, in both modes (about 5.6:1); Matomo 6's dark danger colour is too light for that.
+@fwdvf-danger-button: #c0322e;
+
+// Rules for Matomo's dark mode, chosen explicitly or following the system (same output as Matomo's .inDarkMode()).
+// Matomo versions without dark mode set no data-theme-mode, so the light look applies there.
+// Status pills (Manage.less) on Matomo 6: a tint of the status colour behind the theme's text colour, readable in light
+// and dark (the theme switches the colours itself, so the dark pair is the same).
+@fwdvf-status-neutral-bg: ~"var(--theme-color-background-tinyContrast, #eee)";
+@fwdvf-status-neutral-fg: @fwdvf-text;
+@fwdvf-status-info-bg: ~"var(--theme-color-background-brand-lowContrast, #e3f0fb)";
+@fwdvf-status-info-fg: @fwdvf-text;
+@fwdvf-status-success-bg: ~"color-mix(in srgb, var(--theme-color-success, #43a047) 18%, transparent)";
+@fwdvf-status-success-fg: @fwdvf-text;
+@fwdvf-status-danger-bg: ~"color-mix(in srgb, var(--theme-color-danger, #c0322e) 18%, transparent)";
+@fwdvf-status-danger-fg: @fwdvf-text;
+@fwdvf-status-warning-bg: ~"color-mix(in srgb, var(--theme-color-warning, #a18a0b) 22%, transparent)";
+@fwdvf-status-warning-fg: @fwdvf-text;
+@fwdvf-status-neutral-bg-dark: @fwdvf-status-neutral-bg;
+@fwdvf-status-neutral-fg-dark: @fwdvf-status-neutral-fg;
+@fwdvf-status-info-bg-dark: @fwdvf-status-info-bg;
+@fwdvf-status-info-fg-dark: @fwdvf-status-info-fg;
+@fwdvf-status-success-bg-dark: @fwdvf-status-success-bg;
+@fwdvf-status-success-fg-dark: @fwdvf-status-success-fg;
+@fwdvf-status-danger-bg-dark: @fwdvf-status-danger-bg;
+@fwdvf-status-danger-fg-dark: @fwdvf-status-danger-fg;
+@fwdvf-status-warning-bg-dark: @fwdvf-status-warning-bg;
+@fwdvf-status-warning-fg-dark: @fwdvf-status-warning-fg;
+
+.fwdvf-dark(@rules) {
+  [data-theme-mode="dark"]:root & {
+    @rules();
+  }
+
+  [data-theme-mode="auto"]:root & {
+    @media (prefers-color-scheme: dark) {
+      @rules();
+    }
+  }
+}
+
+// Background and text of a status pill, with the dark pair under Matomo's dark mode.
+.fwdvf-status-colours(@bg, @fg, @bg-dark, @fg-dark) {
+  background: @bg;
+  color: @fg;
+
+  .fwdvf-dark({
+    background: @bg-dark;
+    color: @fg-dark;
+  });
+}

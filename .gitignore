@@ -1,0 +1,9 @@
+.claude/
+*.DS_Store
+node_modules/
+vendor/
+.phpunit.cache/
+vue/dist/*.map
+vue/dist/*.common.js*
+vue/dist/demo.html
+vue/dist/*.umd.js

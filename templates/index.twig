@@ -1,0 +1,16 @@
+{% extends 'admin.twig' %}
+
+{% set title %}{{ 'FeinwerkDeleteVisitsFilter_PageTitle'|translate }}{% endset %}
+
+{% block content %}
+    <div vue-entry="FeinwerkDeleteVisitsFilter.Manage"
+         initial-site-id="{{ props.initialSiteId|json_encode }}"
+         site-names="{{ props.siteNames|json_encode|e('html_attr') }}"
+         active-jobs="{{ props.activeJobs|json_encode|e('html_attr') }}"
+         confirm-threshold="{{ props.confirmThreshold|json_encode }}"
+         background-budget="{{ props.backgroundBudget|json_encode }}"
+         default-batch-size="{{ props.defaultBatchSize|json_encode }}"
+         feedback="{{ props.feedback|json_encode|e('html_attr') }}"></div>
+    {# Feinwerk promotion kit: rendered by Promo\PromoLine from translated texts and fixed URLs only #}
+    {{ promoLine|raw }}
+{% endblock %}

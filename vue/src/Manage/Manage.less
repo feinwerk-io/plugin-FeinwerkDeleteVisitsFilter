@@ -1,0 +1,125 @@
+/*!
+ * Matomo - free/libre analytics platform
+ *
+ * @link    https://matomo.org
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
+ */
+
+@import "theme.less";
+
+.fwdvf-manage {
+  .fwdvf-hint,
+  .fwdvf-muted {
+    color: @fwdvf-text-light;
+  }
+
+  .fwdvf-error {
+    color: @fwdvf-danger;
+
+    .fwdvf-dark({
+      color: @fwdvf-danger-dark;
+    });
+  }
+
+  .fwdvf-nowrap {
+    white-space: nowrap;
+  }
+
+  .fwdvf-num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  // Matomo's entity tables left-align every header with `!important`.
+  table.fwdvf-table th.fwdvf-num {
+    text-align: right !important;
+  }
+
+  .fwdvf-table {
+    margin: 10px 0 20px;
+  }
+
+  // Wide tables scroll inside their card instead of widening the page.
+  .fwdvf-table-scroll {
+    overflow-x: auto;
+  }
+
+  code {
+    word-break: break-all;
+  }
+
+  // One line with an ellipsis: IP-list segments can be several KB long.
+  .fwdvf-segment-cell {
+    display: block;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Status pills: colours come from theme.less (fixed light and dark pairs on the 5.x line, Matomo 6's status colours
+  // on main), so this block stays the same on both lines.
+  .fwdvf-status {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: normal;
+    .fwdvf-status-colours(@fwdvf-status-neutral-bg, @fwdvf-status-neutral-fg,
+      @fwdvf-status-neutral-bg-dark, @fwdvf-status-neutral-fg-dark);
+  }
+
+  .fwdvf-status-queued,
+  .fwdvf-status-running {
+    .fwdvf-status-colours(@fwdvf-status-info-bg, @fwdvf-status-info-fg,
+      @fwdvf-status-info-bg-dark, @fwdvf-status-info-fg-dark);
+  }
+
+  .fwdvf-status-done {
+    .fwdvf-status-colours(@fwdvf-status-success-bg, @fwdvf-status-success-fg,
+      @fwdvf-status-success-bg-dark, @fwdvf-status-success-fg-dark);
+  }
+
+  .fwdvf-status-failed {
+    .fwdvf-status-colours(@fwdvf-status-danger-bg, @fwdvf-status-danger-fg,
+      @fwdvf-status-danger-bg-dark, @fwdvf-status-danger-fg-dark);
+  }
+
+  .fwdvf-status-held {
+    .fwdvf-status-colours(@fwdvf-status-warning-bg, @fwdvf-status-warning-fg,
+      @fwdvf-status-warning-bg-dark, @fwdvf-status-warning-fg-dark);
+  }
+
+  .fwdvf-tabs {
+    margin: 20px 0 0;
+    border-bottom: 1px solid @fwdvf-border;
+  }
+
+  .fwdvf-tab {
+    padding: 10px 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: @fwdvf-text-light;
+    font-size: 15px;
+    cursor: pointer;
+
+    &.fwdvf-tab-active {
+      border-bottom-color: @fwdvf-brand;
+      color: @fwdvf-text;
+      font-weight: bold;
+    }
+  }
+}
+
+// One quiet look for segment definitions (top level: dialog content is moved to <body>). The class outranks Matomo's
+// `code` element rule, which styles every <code> as a dark code block.
+.fwdvf-code {
+  padding: 1px 6px;
+  border: 1px solid @fwdvf-border-light;
+  border-radius: 3px;
+  background: @fwdvf-background-tiny;
+  color: @fwdvf-text-light;
+  font-family: Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}

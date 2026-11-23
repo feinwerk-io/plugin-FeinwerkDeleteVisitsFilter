@@ -1,0 +1,35 @@
+{
+    "name": "FeinwerkDeleteVisitsFilter",
+    "description": "Remove bots, spam and test traffic from Matomo: delete visits by segment, date range and website, check them first, safe for millions of visits.",
+    "version": "6.0.0",
+    "theme": false,
+    "require": {
+        "matomo": ">=6.0.0-b1,<7.0.0-b1",
+        "php": ">=8.1.0"
+    },
+    "authors": [
+        {
+            "name": "Peter Boehlke, Feinwerk.io",
+            "email": "support@feinwerk.io",
+            "homepage": "https://feinwerk.io"
+        }
+    ],
+    "license": "GPL v3+",
+    "homepage": "https://plugins.feinwerk.io/en/plugins/FeinwerkDeleteVisitsFilter?mtm_campaign=matomo-marketplace&mtm_source=FeinwerkDeleteVisitsFilter",
+    "keywords": [
+        "delete",
+        "visits",
+        "filter",
+        "bulk",
+        "gdpr",
+        "privacy",
+        "bots",
+        "spam",
+        "cleanup"
+    ],
+    "support": {
+        "email": "support@feinwerk.io",
+        "docs": "https://plugins.feinwerk.io/en/docs/plugins/FeinwerkDeleteVisitsFilter"
+    },
+    "category": "database"
+}

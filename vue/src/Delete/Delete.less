@@ -1,0 +1,295 @@
+/*!
+ * Matomo - free/libre analytics platform
+ *
+ * @link    https://matomo.org
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
+ */
+
+@import "../Manage/theme.less";
+
+.fwdvf-delete {
+  // Before the segment header: its heading rule has the same specificity and must win.
+  .fwdvf-section {
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+  }
+
+  .fwdvf-segment {
+    max-width: 930px;
+  }
+
+  .fwdvf-segment-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 8px;
+
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .fwdvf-segment-mode {
+    display: inline-flex;
+    height: 30px;
+    border: 1px solid @fwdvf-border;
+    border-radius: 3px;
+    overflow: hidden;
+
+    button {
+      margin: 0;
+      padding: 0 14px;
+      border: 0;
+      background: transparent;
+      color: @fwdvf-text-light;
+      font-size: 13px;
+      line-height: 28px;
+      cursor: pointer;
+
+      & + button {
+        border-left: 1px solid @fwdvf-border;
+      }
+
+      &:hover {
+        background: @fwdvf-background-tiny;
+      }
+
+      &:focus-visible {
+        outline: 2px solid @fwdvf-focus-ring;
+        outline-offset: -2px;
+      }
+
+      // Normal text on the brand tint (brand-coloured text on it is too faint); a brand line marks the choice.
+      &.fwdvf-active {
+        background-color: ~"color-mix(in srgb, @{fwdvf-brand} 14%, transparent)";
+        box-shadow: inset 0 -2px 0 @fwdvf-brand;
+        color: @fwdvf-text;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .fwdvf-segment-text {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: auto;
+    min-height: 12em;
+    max-height: 32em;
+    overflow-y: auto;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid @fwdvf-border;
+    border-radius: 3px;
+    background: @fwdvf-background-base;
+    color: @fwdvf-text;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+
+    &:focus {
+      outline: 2px solid @fwdvf-focus-ring;
+      outline-offset: 0;
+    }
+  }
+
+  .fwdvf-segment-text-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    margin-top: 6px;
+    color: @fwdvf-text-light;
+    font-size: 12px;
+  }
+
+  .fwdvf-segment-count {
+    white-space: nowrap;
+
+    &.fwdvf-over {
+      color: @fwdvf-danger;
+      font-weight: 600;
+
+      .fwdvf-dark({
+        color: @fwdvf-danger-dark;
+      });
+    }
+  }
+
+  // A saved segment shows its definition in the label: use the width of the segment box (Matomo's field puts the
+  // select in a half-width column) and keep long labels clear of the arrow.
+  .fwdvf-stored-segment {
+    .form-group > .col:first-child {
+      width: 100%;
+    }
+
+    .form-group > .col:empty {
+      display: none;
+    }
+
+    input.select-dropdown {
+      box-sizing: border-box;
+      padding-right: 28px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  // Matomo pads the cells of an entity table's head and body (16px, 20px at the left edge) but not those of its foot.
+  table.fwdvf-table tr.fwdvf-total td {
+    padding: 12px 16px;
+    font-weight: 600;
+
+    &:first-child {
+      padding-left: 20px;
+    }
+  }
+
+  .fwdvf-segment-definition {
+    box-sizing: border-box;
+    margin-top: 8px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fwdvf-radios label {
+    margin-right: 24px;
+  }
+
+  .fwdvf-sites-pattern {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+
+    input {
+      max-width: 260px;
+      padding: 6px 8px;
+    }
+  }
+
+  .fwdvf-site-list {
+    margin: 8px 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fwdvf-remove {
+      padding: 0 8px;
+      font-size: 18px;
+      line-height: 24px;
+      height: 24px;
+    }
+  }
+
+  // Matomo 6 lays out the two calendars of the DateRangePicker with flex only inside its period selector; the float
+  // layout left here pushes the days of the second calendar below the first one.
+  .fwdvf-daterange-picker {
+    margin: 8px 0;
+
+    .dateRangePicker {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    #calendarRangeFrom {
+      float: none;
+    }
+
+    #calendarRangeTo {
+      margin-left: 0;
+    }
+  }
+
+  .fwdvf-advanced {
+    margin: 0 0 16px;
+
+    summary {
+      cursor: pointer;
+    }
+  }
+
+  .fwdvf-sample {
+    font-size: 13px;
+  }
+
+  .fwdvf-url {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // A fixed red (theme.less): white button text needs it in light and dark mode, also where the theme's danger colour
+  // is a light red for text on dark backgrounds.
+  .fwdvf-delete-button .btn {
+    background-color: @fwdvf-danger-button;
+  }
+}
+
+// The dialog content is moved to <body> while open.
+.fwdvf-confirm {
+  ul {
+    margin: 10px 0;
+  }
+
+  code,
+  li {
+    word-break: break-all;
+  }
+
+  .fwdvf-confirm-segment {
+    display: block;
+    max-height: 7.5em;
+    overflow: auto;
+    word-break: break-all;
+  }
+
+  // Label and field side by side with room between them; they stack when the dialog is narrow.
+  .fwdvf-confirm-typing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+
+    label {
+      margin: 0;
+    }
+
+    input {
+      max-width: 200px;
+      padding: 6px 8px;
+      margin: 0;
+    }
+
+    .fwdvf-error {
+      flex-basis: 100%;
+      margin: 0;
+    }
+  }
+
+  .fwdvf-error {
+    color: @fwdvf-danger;
+
+    .fwdvf-dark({
+      color: @fwdvf-danger-dark;
+    });
+  }
+}
