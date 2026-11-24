@@ -67,11 +67,11 @@
       </div>
     </div>
     <div
-      v-if="!asText && modelValue.trim()"
+      v-if="!asText && definition"
       class="fwdvf-code fwdvf-segment-definition"
-      :title="modelValue.trim()"
+      :title="definition"
     >
-      {{ modelValue.trim() }}
+      {{ definition }}
     </div>
   </div>
 </template>
@@ -91,7 +91,7 @@ import { SegmentGenerator } from 'SegmentEditor';
 import { storedSegments } from '../api';
 import { formatCount } from '../labels';
 import {
-  decodeOnce, isSegmentTooLong, SEGMENT_MAX_LENGTH, segmentLength, SelectOption,
+  decodeOnce, hasEmptyCondition, isSegmentTooLong, SEGMENT_MAX_LENGTH, segmentLength, SelectOption,
   storedSegmentOptions, toEditorEncoding,
 } from '../lib/segment';
 
@@ -127,6 +127,12 @@ export default defineComponent({
     };
   },
   computed: {
+    // The definition under the editor; hidden while a condition has no value
+    // (an untouched row reads "actions==").
+    definition(): string {
+      const value = this.modelValue.trim();
+      return value !== '' && !hasEmptyCondition(value) ? value : '';
+    },
     helpId(): string {
       return `fwdvf-segment-help-${this.uid}`;
     },

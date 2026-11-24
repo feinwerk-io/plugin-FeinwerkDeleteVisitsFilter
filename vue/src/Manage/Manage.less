@@ -109,6 +109,12 @@
       color: @fwdvf-text;
       font-weight: bold;
     }
+
+    // Matomo 5.0 has no global focus outline: keyboard users see which tab has the focus.
+    &:focus-visible {
+      outline: 2px solid @fwdvf-focus-ring;
+      outline-offset: -2px;
+    }
   }
 }
 

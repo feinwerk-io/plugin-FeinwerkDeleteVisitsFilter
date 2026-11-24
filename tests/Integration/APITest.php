@@ -164,6 +164,68 @@ class APITest extends IntegrationTestCase
         $this->assertSame([], $this->api->getJobs());
     }
 
+    public function test_createJob_dryRunQueuesNothing(): void
+    {
+        $result = $this->api->createJob('1,2', self::BOT, '2026-03-14', '2026-03-14', '', 'api', '', '1');
+
+        $this->assertTrue($result['dry_run']);
+        $this->assertSame(3, $result['total']);
+        $this->assertSame([1, 2], array_column($result['sites'], 'idsite'));
+        $this->assertSame([], $this->api->getJobs());
+        $this->assertSame(3, $this->api->countVisits('1,2', self::BOT, '2026-03-14', '2026-03-14'));
+    }
+
+    public function test_createJob_queuesOnlyWhenExpectedVisitsMatch(): void
+    {
+        $error = null;
+        try {
+            $this->api->createJob('1,2', self::BOT, '2026-03-14', '2026-03-14', '', 'api', '5');
+        } catch (\Exception $e) {
+            $error = $e;
+        }
+
+        $this->assertNotNull($error, 'Expected an exception');
+        $this->assertSame(400, $error->getCode());
+        $this->assertStringContainsString('expectedVisits is 5, but 3 visits match now', $error->getMessage());
+        $this->assertSame([], $this->api->getJobs());
+
+        $job = $this->api->createJob('1,2', self::BOT, '2026-03-14', '2026-03-14', '', 'api', '3');
+
+        $this->assertSame('queued', $job['status']);
+        $this->assertSame([1, 2], $job['idsites']);
+        $this->assertSame(self::BOT, $job['segment']);
+    }
+
+    /**
+     * @dataProvider provideInvalidParameters
+     */
+    public function test_invalidParametersNameTheParameterAndTheAllowedValues(string $method, array $args, string $expected): void
+    {
+        $error = null;
+        try {
+            $this->api->$method(...$args);
+        } catch (\Exception $e) {
+            $error = $e;
+        }
+
+        $this->assertNotNull($error, 'Expected an exception');
+        $this->assertSame(400, $error->getCode());
+        $this->assertStringContainsString($expected, $error->getMessage());
+        $this->assertSame([], $this->api->getJobs());
+    }
+
+    public function provideInvalidParameters(): array
+    {
+        $range = [self::BOT, '2026-03-14', '2026-03-14'];
+
+        return [
+            'status' => ['getJobs', [0, 50, 'finished'], 'for status. Allowed values: queued, running, held, done, cancelled, failed'],
+            'source' => ['getJobs', [0, 50, '', 'cron'], 'for source. Allowed values: ui, api, console, rule'],
+            'dryRun' => ['createJob', [1, ...$range, '', 'api', '', 'yes please'], 'for dryRun. Allowed values: 0, 1'],
+            'expectedVisits' => ['createJob', [1, ...$range, '', 'api', '-1'], 'for expectedVisits: a whole number of 0 or more'],
+        ];
+    }
+
     public function test_previewDeletion_summarizesPerWebsite(): void
     {
         $preview = $this->api->previewDeletion('1,2', 'pageUrl=@/spam', '2026-03-14', '2026-03-14', 5);

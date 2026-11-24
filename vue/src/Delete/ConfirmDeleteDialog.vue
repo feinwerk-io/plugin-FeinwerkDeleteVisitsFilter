@@ -32,15 +32,17 @@
           {{ translate('FeinwerkDeleteVisitsFilter_ConfirmTypeMismatch') }}
         </p>
       </div>
-      <!-- Cancel first: the dialog focuses the first button, so a held Enter cannot confirm. -->
+      <!-- Matomo's order: the action first, Cancel last. Matomo 5.1 focuses the last -->
+      <!-- footer link (no focusSelector before 5.2), later versions the one dialogOptions -->
+      <!-- names: Cancel either way, so a held Enter cannot confirm. -->
       <!-- role names the MatomoDialog button (yes/no/validation), not an ARIA role. -->
       <!-- eslint-disable vuejs-accessibility/aria-role -->
-      <input type="button" role="no" :value="translate('FeinwerkDeleteVisitsFilter_Cancel')" />
       <input
         type="button"
         role="validation"
         :value="translate('FeinwerkDeleteVisitsFilter_DeleteNow')"
       />
+      <input type="button" role="no" :value="translate('FeinwerkDeleteVisitsFilter_Cancel')" />
       <!-- eslint-enable vuejs-accessibility/aria-role -->
     </div>
   </MatomoDialog>
@@ -82,13 +84,13 @@ export default defineComponent({
     needsTyping(): boolean {
       return requiresTypedConfirmation(this.total, this.threshold);
     },
-    // Read when the dialog opens: focus the typed-count input, else the cancel link (never the
-    // destructive one, which Matomo would otherwise focus because it is the last footer link).
+    // Read when the dialog opens (Matomo 5.2 and later): focus the typed-count input, else the
+    // cancel link, the last one in the footer.
     dialogOptions(): { focusSelector: string } {
       return {
         focusSelector: this.needsTyping
           ? '#fwdvf-confirm-count'
-          : '.modal.open .modal-footer a:first-child',
+          : '.modal.open .modal-footer a:last-child',
       };
     },
     formattedTotal(): string {

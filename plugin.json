@@ -1,7 +1,7 @@
 {
     "name": "FeinwerkDeleteVisitsFilter",
     "description": "Remove bots, spam and test traffic from Matomo: delete visits by segment, date range and website, check them first, safe for millions of visits.",
-    "version": "6.0.0",
+    "version": "6.1.0",
     "theme": false,
     "require": {
         "matomo": ">=6.0.0-b1,<7.0.0-b1",

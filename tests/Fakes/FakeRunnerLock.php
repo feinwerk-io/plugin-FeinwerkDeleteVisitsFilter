@@ -18,6 +18,8 @@ final class FakeRunnerLock implements RunnerLock
     public int $acquired = 0;
     public int $extended = 0;
     public int $released = 0;
+    /** Number of release() calls that fail like a lost database connection before releasing works. */
+    public int $releaseFailures = 0;
 
     public function acquire(): bool
     {
@@ -38,6 +40,10 @@ final class FakeRunnerLock implements RunnerLock
 
     public function release(): void
     {
+        if ($this->releaseFailures > 0) {
+            $this->releaseFailures--;
+            throw new \RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+        }
         $this->released++;
     }
 }

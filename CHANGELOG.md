@@ -1,5 +1,21 @@
 # Changelog
 
+## 6.1.0
+
+- Preview: the sample shows browser and operating system by name (the code on hover) and covers every website with matches instead of only the first one.
+- Admin page: once the matches are shown, the delete button is the only filled button; the button that deletes in the confirmation dialog is red like the delete button of the page; the dialogs before deleting, stopping and continuing a deletion show the action first and Cancel last, as Matomo does, and put the focus on the safe choice in every supported Matomo version; the date and saved segment selects line up with the other fields; an untouched segment condition no longer shows a half finished definition.
+- History: when no deletion matches the filters, the page says so and offers to show all; numbers in the details are formatted.
+- Wording: the English page says "Stop" for stopping a deletion and "Started via" for the filter; date ranges read "du ... au ..." in French, "del ... al ..." in Spanish and "dal ... al ..." in Italian.
+- Keyboard and screen readers: the tabs work with the arrow keys and show the focus, the details link says whether it is open, and each remove button names its website.
+- A deletion survives a short loss of the database connection ("MySQL server has gone away"): it connects again and continues. If the database stays away, the deletion is marked as failed and can be continued from the history, and the next deletion starts at once instead of after up to 10 minutes.
+- API for scripts and AI assistants: createJob takes expectedVisits (nothing is queued when the number of matching visits differs) and dryRun=1 (only counts) and returns the created job; getJobs and createJob refuse unknown filter and source values with the allowed ones; every method describes its parameters and result, and the README shows example calls; an internal helper no longer appears in Matomo's API list.
+- The Feinwerk Connector tip leads super users to the one-click installer under Administration, Feinwerk Plugins, where it is offered.
+- The connector installer shows its progress after the click and takes no second click; it also updates a connector that no longer fits this Matomo instead of activating it.
+- The tip below the admin page drops its sentence on very narrow screens instead of cutting it; the Feinwerk tip on the start page of the administration sits below Matomo's own notices.
+- A deletion that makes no progress for two minutes now says since when and that it continues by itself; the admin page no longer says that another process is working then. A deletion that searches a long period for rare matches counts as working, not as stalled.
+- History: the outcome and the actions stay in view (who started a deletion and how long it took are shown under the time and the count), dates no longer break in the middle, and on narrow screens each deletion is shown as one block with its fields aligned.
+- Better contrast for the instruction in the confirmation dialog and for the website choice; the website name filter wraps on narrow screens; French texts put a space before colons.
+
 ## 6.0.0
 
 The first stable version for Matomo 6. Compared with the last beta under the old numbers (3.0.0-beta.1); users of

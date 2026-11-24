@@ -94,3 +94,44 @@ export function rangeProblem(range: DayRange): RangeProblem | null {
   }
   return null;
 }
+
+/**
+ * One piece of a translated date range: a date (kept on one line) or the words between the dates.
+ */
+export interface RangePart {
+  text: string;
+  date: boolean;
+}
+
+export const RANGE_FROM_MARK = '\u0001';
+export const RANGE_TO_MARK = '\u0002';
+
+/**
+ * Splits a date range translated with the two marks instead of the dates ("\u0001 to \u0002", "du
+ * \u0001 au \u0002") into its pieces, so each date can stay on one line: a table cell would
+ * otherwise break inside a date at its hyphen. Without the marks (an unexpected translation) the
+ * whole text stays one piece.
+ */
+export function rangeParts(marked: string, from: string, to: string): RangePart[] {
+  if (from === to) {
+    return [{ text: from, date: true }];
+  }
+  const parts: RangePart[] = [];
+  let rest = marked;
+  while (rest !== '') {
+    const fromAt = rest.indexOf(RANGE_FROM_MARK);
+    const toAt = rest.indexOf(RANGE_TO_MARK);
+    const at = [fromAt, toAt].filter((i) => i !== -1).sort((a, b) => a - b)[0];
+    if (at === undefined) {
+      parts.push({ text: rest, date: false });
+      break;
+    }
+    if (at > 0) {
+      parts.push({ text: rest.slice(0, at), date: false });
+    }
+    parts.push({ text: at === fromAt ? from : to, date: true });
+    rest = rest.slice(at + 1);
+  }
+
+  return parts;
+}

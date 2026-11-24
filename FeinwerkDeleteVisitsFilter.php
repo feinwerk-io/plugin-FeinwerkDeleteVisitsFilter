@@ -63,11 +63,13 @@ class FeinwerkDeleteVisitsFilter extends Plugin
         $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/vue/src/Manage/FeedbackBar.less';
         $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/stylesheets/promo.css';
         $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/stylesheets/feinwerklogo.css';
+        $cssFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/stylesheets/connectorinstaller.css';
     }
 
     public function getJsFiles(array &$jsFiles): void
     {
         $jsFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/javascripts/promo.js';
+        $jsFiles[] = 'plugins/FeinwerkDeleteVisitsFilter/javascripts/connectorinstaller.js';
     }
 
     /**

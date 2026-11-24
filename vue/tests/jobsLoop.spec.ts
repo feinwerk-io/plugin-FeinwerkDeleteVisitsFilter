@@ -5,7 +5,9 @@
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
  */
 
-import { ERROR_RETRY_MS, JobsLoop, JobsLoopDeps } from '../src/lib/jobsLoop';
+import {
+  ERROR_RETRY_MS, JobsLoop, JobsLoopDeps, progressKey, STALL_MS, stalledSince,
+} from '../src/lib/jobsLoop';
 import { ProgressSample } from '../src/lib/progress';
 import { Job, JobStatus, ProcessResult } from '../src/types';
 
@@ -54,6 +56,7 @@ function setup(
     busyWhileWaiting: [] as boolean[],
     sampleKeysWhileWaiting: [] as string[][],
     samplesWhileWaiting: [] as ProgressSample[][],
+    marksWhileWaiting: [] as number[],
     finished: [] as Job[],
   };
   let loop: JobsLoop;
@@ -79,6 +82,7 @@ function setup(
       log.busyWhileWaiting.push(loop.state.busy);
       log.sampleKeysWhileWaiting.push(Object.keys(loop.state.samples));
       log.samplesWhileWaiting.push(JSON.parse(JSON.stringify(loop.state.samples[1] || [])));
+      log.marksWhileWaiting.push(loop.state.progressAt[1] ? loop.state.progressAt[1].at : -1);
       return Promise.resolve();
     },
     now: () => log.process * 1000,
@@ -287,5 +291,52 @@ describe('JobsLoop', () => {
       expect(loop.state.finishedCount).toBe(1);
       expect(loop.state.active).toEqual([]);
     });
+  });
+});
+
+describe('stall detection', () => {
+  it('counts a running job as stalled only when it stood still for STALL_MS', () => {
+    expect(stalledSince(undefined, 1000)).toBeNull();
+    expect(stalledSince({ key: '10', at: 0 }, STALL_MS - 1)).toBeNull();
+    expect(stalledSince({ key: '10', at: 5000 }, 5000 + STALL_MS)).toBe(5000);
+  });
+
+  it('counts a new heartbeat, step or website as progress, not only deleted visits', () => {
+    const base = job(1, 'running', 50);
+    const key = progressKey(base);
+    expect(progressKey({ ...base })).toBe(key);
+    expect(progressKey({ ...base, heartbeat_at: '2026-10-06 10:05:00' })).not.toBe(key);
+    expect(progressKey({ ...base, batches: 1 })).not.toBe(key);
+    expect(progressKey({ ...base, site_index: 1 })).not.toBe(key);
+    expect(progressKey({ ...base, estimated_visits: null })).toBeNull();
+  });
+
+  // Regression (L8 review 2026-11-24): a rare segment scans windows for minutes without deleting.
+  it('sees progress while the heartbeat moves, and while the job is still counting', async () => {
+    const beat = (at: string): ProcessResult => ({
+      busy: true, jobs: [{ ...job(1, 'running', 50), heartbeat_at: at }],
+    });
+    const counting: ProcessResult = {
+      busy: true, jobs: [{ ...job(1, 'running', 0), estimated_visits: null }],
+    };
+    const { loop, log } = setup(
+      [beat('2026-10-06 10:00:00'), beat('2026-10-06 10:00:15'), counting, counting],
+      { 1: job(1, 'done', 100) },
+    );
+
+    await loop.run();
+
+    expect(log.marksWhileWaiting).toEqual([1000, 2000, 3000, 4000]);
+  });
+
+  it('keeps the time of the last change while the count stands still, and moves it when the count moves', async () => {
+    const still = (deleted: number): ProcessResult => ({ busy: true, jobs: [job(1, 'running', deleted)] });
+    const { loop, log } = setup([still(50), still(50), still(80)], { 1: job(1, 'done', 100) });
+
+    await loop.run();
+
+    // now() is 1000 per processJobs call: 50 first seen at 1000, unchanged at 2000, 80 seen at 3000
+    expect(log.marksWhileWaiting).toEqual([1000, 1000, 3000]);
+    expect(loop.state.progressAt).toEqual({});
   });
 });

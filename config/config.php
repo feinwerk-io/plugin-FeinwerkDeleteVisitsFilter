@@ -9,6 +9,8 @@
 
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Clock;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\ArchiveInvalidation;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\DatabaseConnection;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\MatomoDatabaseConnection;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\MatomoArchiveInvalidation;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\MatomoSegmentChecker;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\MatomoSiteDirectory;
@@ -36,4 +38,5 @@ return [
     ArchiveInvalidation::class => \Piwik\DI::autowire(MatomoArchiveInvalidation::class),
     RunnerLock::class => \Piwik\DI::autowire(MatomoRunnerLock::class),
     EventDispatcher::class => \Piwik\DI::autowire(MatomoEventDispatcher::class),
+    DatabaseConnection::class => \Piwik\DI::autowire(MatomoDatabaseConnection::class),
 ];
