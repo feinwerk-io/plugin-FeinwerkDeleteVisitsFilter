@@ -12,6 +12,7 @@ namespace Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs;
 use Piwik\Log\LoggerInterface;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Clock;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\ArchiveInvalidation;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\DatabaseConnection;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\DateWindow;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\SiteDirectory;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Engine\TransientDatabaseException;
@@ -49,6 +50,7 @@ final class JobRunner
         private Clock $clock,
         private EventDispatcher $events,
         private LoggerInterface $logger,
+        private DatabaseConnection $connection,
         private int $windowSize = VisitFinder::WINDOW_SIZE
     ) {
     }
@@ -83,7 +85,7 @@ final class JobRunner
                 && $this->enoughBudgetForAnotherJob($deadline, $budgetSeconds)
             );
         } finally {
-            $this->lock->release();
+            $this->releaseLock();
         }
 
         return new RunResult(false, array_values(array_unique($processed)));
@@ -101,7 +103,7 @@ final class JobRunner
                     return self::LOCK_LOST; // nothing persisted: the new lock holder starts over
                 }
                 $job->estimatedVisits = $estimate;
-                if (!$this->jobs->saveProgress($job, $this->nowUtc())) {
+                if (!$this->saveProgress($job)) {
                     return self::FINISHED;
                 }
             }
@@ -121,7 +123,7 @@ final class JobRunner
                 if (!$this->sites->exists($idSite)) {
                     $job->addMessage('FeinwerkDeleteVisitsFilter_MessageSiteSkipped', [$idSite]);
                     $job->progress->siteIndex++;
-                    if (!$this->jobs->saveProgress($job, $this->nowUtc())) {
+                    if (!$this->saveProgress($job)) {
                         return self::FINISHED;
                     }
                     continue;
@@ -137,15 +139,15 @@ final class JobRunner
                     if ($didWork && $this->deadlineReached($deadline)) {
                         return self::PAUSED; // the window is scanned again next time; deleted visits are gone by then
                     }
-                    if (!$this->isRunning($job->idJob)) {
+                    if (!$this->retrying(fn() => $this->isRunning($job->idJob))) {
                         return self::FINISHED;
                     }
-                    if (!$this->lock->extend()) {
+                    if (!$this->extendLock()) {
                         return self::LOCK_LOST; // confirm we still own the queue before deleting anything
                     }
                     $this->deleteChunk($job, $idSite, $timezone, $chunk);
                     $didWork = true;
-                    if (!$this->jobs->saveProgress($job, $this->nowUtc())) {
+                    if (!$this->saveProgress($job)) {
                         return self::FINISHED;
                     }
                     if ($onProgress !== null) {
@@ -153,7 +155,7 @@ final class JobRunner
                     }
                 }
 
-                if (!$this->lock->extend()) {
+                if (!$this->extendLock()) {
                     return self::LOCK_LOST; // do not advance the cursor without the lock
                 }
                 if ($until === null) {
@@ -162,7 +164,7 @@ final class JobRunner
                     $job->progress->setCursor($idSite, $until);
                 }
                 $didWork = true;
-                if (!$this->jobs->saveProgress($job, $this->nowUtc())) {
+                if (!$this->saveProgress($job)) {
                     return self::FINISHED;
                 }
                 if ($job->progress->siteIndex < $siteCount && $this->deadlineReached($deadline)) {
@@ -170,12 +172,18 @@ final class JobRunner
                 }
             }
 
-            if ($this->jobs->transition($job->idJob, [Job::STATUS_RUNNING], Job::STATUS_DONE, ['finished_at' => $this->nowUtc()])) {
+            if ($this->retrying(fn() => $this->jobs->transition($job->idJob, [Job::STATUS_RUNNING], Job::STATUS_DONE, ['finished_at' => $this->nowUtc()]))) {
                 $this->postWithJob(self::EVENT_FINISHED, $job->idJob);
             }
 
             return self::FINISHED;
         } catch (\Throwable $e) {
+            if (TransientDatabaseException::isConnectionLost($e)) {
+                // The connection stayed away through the retries (or broke outside them): open a new one, so the job
+                // can be marked failed (retryJob continues it) and run() frees the lock now instead of after its TTL.
+                // Not left running: a "gone away" that repeats on every try (max_allowed_packet) would never end.
+                $this->reconnect();
+            }
             $this->logger->error('FeinwerkDeleteVisitsFilter: job {job} failed: {error}', [
                 'job' => $job->idJob,
                 'error' => $e->getMessage(),
@@ -208,7 +216,7 @@ final class JobRunner
             }
             $window = DateWindow::forLocalDays($job->dateFrom, $job->dateTo, $this->sites->timezone($idSite));
             $total += (int) $this->retrying(fn() => $this->source->count($idSite, $job->segment, $window));
-            if (!$this->lock->extend()) {
+            if (!$this->extendLock()) {
                 return null;
             }
         }
@@ -229,12 +237,12 @@ final class JobRunner
         // purge), because archiving may have run in between and would otherwise keep reports from partly deleted logs.
         $job->progress->addInvalidatedDays($idSite, $days);
         // Before deleting: after a crash between both steps the visits would be gone and the days forgotten.
-        $this->invalidation->invalidate($idSite, $days);
+        $this->retrying(fn() => $this->invalidation->invalidate($idSite, $days));
 
         $result = $this->retrying(fn() => $this->purger->purge($idSite, $chunk));
         // After deleting: archiving may have run between the first call and the purge and rebuilt reports from rows
         // that were still there. Matomo skips days that are already pending.
-        $this->invalidation->invalidate($idSite, $days);
+        $this->retrying(fn() => $this->invalidation->invalidate($idSite, $days));
         $job->deletedVisits += $result->deletedVisits;
         $job->addDeletedRows($result->rowsPerTable);
         $job->progress->batches++;
@@ -248,6 +256,10 @@ final class JobRunner
     }
 
     /**
+     * Runs one database step again after a deadlock, a lock wait timeout or a lost connection (reconnecting first),
+     * at most MAX_TRANSIENT_RETRIES times with a growing pause. Every step it wraps can run twice: it reads, or it writes
+     * absolute values (progress, status from running, invalidation of days, deletion of given visits).
+     *
      * @return mixed
      */
     private function retrying(callable $operation)
@@ -255,15 +267,61 @@ final class JobRunner
         for ($attempt = 0; ; $attempt++) {
             try {
                 return $operation();
-            } catch (TransientDatabaseException $e) {
-                if ($attempt >= self::MAX_TRANSIENT_RETRIES) {
+            } catch (\Exception $e) {
+                // also raw driver exceptions: not every call goes through TransientDatabaseException::wrap()
+                if (!TransientDatabaseException::isTransient($e) || $attempt >= self::MAX_TRANSIENT_RETRIES) {
                     throw $e;
                 }
                 $this->logger->warning('FeinwerkDeleteVisitsFilter: retrying after transient database error: {error}', [
                     'error' => $e->getMessage(),
                 ]);
+                if (TransientDatabaseException::isConnectionLost($e)) {
+                    $this->reconnect();
+                }
                 $this->clock->sleep(2 ** $attempt);
             }
+        }
+    }
+
+    private function saveProgress(Job $job): bool
+    {
+        return (bool) $this->retrying(fn() => $this->jobs->saveProgress($job, $this->nowUtc()));
+    }
+
+    private function extendLock(): bool
+    {
+        return (bool) $this->retrying(fn() => $this->lock->extend());
+    }
+
+    /** Drops a dead database connection so the next query opens a new one. */
+    private function reconnect(): void
+    {
+        $this->connection->reconnect();
+    }
+
+    /**
+     * Frees the runner lock. Its release needs the database too: after a lost connection reconnect once and try
+     * again, so the next call does not wait for the lock's TTL (10 minutes). Never throws: the TTL stays the fallback.
+     */
+    private function releaseLock(): void
+    {
+        try {
+            $this->lock->release();
+        } catch (\Throwable $e) {
+            if (TransientDatabaseException::isConnectionLost($e)) {
+                $this->reconnect();
+                try {
+                    $this->lock->release();
+
+                    return;
+                } catch (\Throwable $again) {
+                    $e = $again;
+                }
+            }
+            $this->logger->error('FeinwerkDeleteVisitsFilter: could not free the runner lock, it frees itself after its TTL: {error}', [
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
         }
     }
 

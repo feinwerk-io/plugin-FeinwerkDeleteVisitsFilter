@@ -60,6 +60,7 @@
             type="button"
             class="btn-flat fwdvf-remove"
             :title="translate('FeinwerkDeleteVisitsFilter_RemoveWebsite')"
+            :aria-label="translate('FeinwerkDeleteVisitsFilter_RemoveWebsiteNamed', nameOf(id))"
             @click="remove(id)"
           >×</button>
         </li>

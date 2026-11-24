@@ -40,7 +40,23 @@ class TransientDatabaseExceptionTest extends TestCase
         return [
             'deadlock'  => ['SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction'],
             'lock wait' => ['SQLSTATE[HY000]: General error: 1205 Lock wait timeout exceeded; try restarting transaction'],
+            'gone away' => ['SQLSTATE[HY000]: General error: 2006 MySQL server has gone away'],
+            'lost'      => ['SQLSTATE[HY000]: General error: 2013 Lost connection to MySQL server during query'],
         ];
+    }
+
+    /** Regression (2026-11-23, a 240k deletion in a sandbox): "gone away" held the runner lock for 10 minutes. */
+    public function test_isConnectionLost_recognisesTheLostConnectionAlsoInTheChain(): void
+    {
+        $goneAway = new \RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+        $this->assertTrue(TransientDatabaseException::isConnectionLost($goneAway));
+        $this->assertTrue(TransientDatabaseException::isConnectionLost(new \Exception('Mysqli statement execute error : Lost connection to MySQL server during query', 2013)));
+        $this->assertTrue(TransientDatabaseException::isConnectionLost(new \RuntimeException('step failed', 0, $goneAway)));
+        $this->assertTrue(TransientDatabaseException::isConnectionLost(new \RuntimeException('SQLSTATE[HY000] [2002] Connection refused')));
+        $this->assertTrue(TransientDatabaseException::isConnectionLost(new \RuntimeException("SQLSTATE[HY000] [2003] Can't connect to MySQL server on 'db' (111)")));
+        $this->assertTrue(TransientDatabaseException::isConnectionLost(new \RuntimeException('SQLSTATE[HY000]: General error: 4031 The client was disconnected by the server because of inactivity.')));
+        $this->assertFalse(TransientDatabaseException::isConnectionLost(new \RuntimeException('SQLSTATE[40001]: Serialization failure: 1213 Deadlock found')));
+        $this->assertFalse(TransientDatabaseException::isConnectionLost(new \RuntimeException("SQLSTATE[HY000] [1045] Access denied for user 'matomo'")));
     }
 
     /**

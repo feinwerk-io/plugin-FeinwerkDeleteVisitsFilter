@@ -127,14 +127,51 @@
 
   // A saved segment shows its definition in the label: use the width of the segment box (Matomo's field puts the
   // select in a half-width column) and keep long labels clear of the arrow.
-  .fwdvf-stored-segment {
-    .form-group > .col:first-child {
-      width: 100%;
+  // Matomo's field markup without its grid offsets, so the selects start at the left edge under their heading like
+  // the other fields: .row centres a flex item with auto margins, the select sits in a half-width column next to an
+  // empty help column, and .input-field adds margins for a floating label.
+  .fwdvf-stored-segment,
+  .fwdvf-daterange {
+    .form-group {
+      margin: 0;
+
+      > .col {
+        width: 100%;
+        margin-left: 0;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      > .col:empty {
+        display: none;
+      }
     }
 
-    .form-group > .col:empty {
+    .input-field label {
+      left: 0;
+    }
+  }
+
+  // The range starts the sentence; in French, Spanish and Italian it starts with a small word ("du", "del", "dal").
+  .fwdvf-daterange-value::first-letter {
+    text-transform: uppercase;
+  }
+
+  // A few short choices: no need for the full width of the card.
+  .fwdvf-daterange > .form-group {
+    max-width: 400px;
+  }
+
+  // The date preset has no label of its own (the heading names it): no empty row for one.
+  .fwdvf-daterange .input-field {
+    margin-top: 0;
+
+    label:empty {
       display: none;
     }
+  }
+
+  .fwdvf-stored-segment {
 
     input.select-dropdown {
       box-sizing: border-box;
@@ -166,17 +203,35 @@
 
   .fwdvf-radios label {
     margin-right: 24px;
+
+    // materialize greys radio labels (2.7:1 on white); these are the choice the user makes, so normal text colour
+    span {
+      color: @fwdvf-text;
+    }
   }
 
+  // Pattern field and "add all matching" button: they wrap below each other on narrow screens and in long languages,
+  // and the button's label may take two lines instead of spilling out of its 36 px box.
   .fwdvf-sites-pattern {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     margin: 10px 0;
 
     input {
+      flex: 1 1 12em;
+      min-width: 0;
       max-width: 260px;
       padding: 6px 8px;
+    }
+
+    .btn-flat {
+      height: auto;
+      min-height: 36px;
+      line-height: 1.3;
+      white-space: normal;
+      text-align: left;
     }
   }
 
@@ -244,6 +299,18 @@
   }
 }
 
+// The dialog's final button in the same red as the delete button of the page (Matomo draws it in its brand colour).
+// Matomo builds the footer next to the content, so the dialog is found by what it contains; without :has() support the
+// button keeps Matomo's colour.
+.modal:has(.fwdvf-confirm) .modal-footer .btn {
+  &,
+  &:hover,
+  &:focus {
+    background-color: @fwdvf-danger-button;
+    color: #fff;
+  }
+}
+
 // The dialog content is moved to <body> while open.
 .fwdvf-confirm {
   ul {
@@ -269,8 +336,10 @@
     align-items: center;
     gap: 6px 12px;
 
+    // the one instruction of the dialog: normal text colour, not materialize's grey label (2.4:1)
     label {
       margin: 0;
+      color: @fwdvf-text;
     }
 
     input {

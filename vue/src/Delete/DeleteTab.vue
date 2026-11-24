@@ -15,7 +15,20 @@
         />
       </details>
       <p v-if="attempted && inputError" class="fwdvf-error">{{ inputError }}</p>
+      <!-- One filled button per screen: once matches are shown, the delete button is the -->
+      <!-- primary one and checking again becomes a flat button (any change of the input -->
+      <!-- removes the matches). -->
+      <button
+        v-if="currentPreview && currentPreview.total > 0"
+        type="button"
+        class="btn-flat fwdvf-check fwdvf-check-again"
+        :disabled="previewing"
+        @click="checkMatches()"
+      >
+        {{ translate('FeinwerkDeleteVisitsFilter_CheckMatches') }}
+      </button>
       <SaveButton
+        v-else
         class="fwdvf-check"
         :value="translate('FeinwerkDeleteVisitsFilter_CheckMatches')"
         :saving="previewing"
@@ -164,7 +177,10 @@ export default defineComponent({
     },
     batchSizeHelp(): string {
       return `${translate('FeinwerkDeleteVisitsFilter_BatchSizeHelp')} ${
-        translate('FeinwerkDeleteVisitsFilter_BatchSizeDefault', this.defaultBatchSize)}`;
+        translate(
+          'FeinwerkDeleteVisitsFilter_BatchSizeDefault',
+          formatCount(this.defaultBatchSize),
+        )}`;
     },
     inputError(): string | null {
       if (!this.selectedIds.length) {

@@ -11,8 +11,8 @@ namespace Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Piwik\Http\HttpCodeException;
-use Piwik\Plugins\FeinwerkDeleteVisitsFilter\API;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\BadRequestException;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Input\HttpErrorStatus;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobNotFoundException;
 
 /** Matomo sets the API answer's HTTP status from an HttpCodeException with a code above 0 (core API ResponseBuilder). */
@@ -44,13 +44,25 @@ class HttpErrorsTest extends TestCase
     public function test_the_plugins_own_page_keeps_http_200(): void
     {
         unset($_GET['force_api_session'], $_POST['force_api_session']);
-        self::assertTrue(API::withHttpStatus(), 'scripts and integrations');
+        self::assertTrue(HttpErrorStatus::wanted(), 'scripts and integrations');
 
         $_POST['force_api_session'] = '1';
         try {
-            self::assertFalse(API::withHttpStatus(), 'the admin page');
+            self::assertFalse(HttpErrorStatus::wanted(), 'the admin page');
         } finally {
             unset($_POST['force_api_session']);
         }
+    }
+
+    /** Matomo's API lists and serves every public method of the API class, static ones too (core API Proxy). */
+    public function test_the_api_class_declares_no_public_static_helpers(): void
+    {
+        $class = new \ReflectionClass(\Piwik\Plugins\FeinwerkDeleteVisitsFilter\API::class);
+        $own = array_filter(
+            $class->getMethods(\ReflectionMethod::IS_PUBLIC),
+            fn(\ReflectionMethod $method) => $method->isStatic() && $method->getDeclaringClass()->getName() === $class->getName()
+        );
+
+        self::assertSame([], array_map(fn(\ReflectionMethod $method) => $method->getName(), array_values($own)));
     }
 }

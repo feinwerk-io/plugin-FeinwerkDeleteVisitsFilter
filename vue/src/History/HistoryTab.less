@@ -41,19 +41,28 @@
     }
   }
 
-  // Nine columns: keep the segment narrower than elsewhere so the table fits its card.
+  .fwdvf-history-nomatch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+  }
+
+  // The segment comes last and stays narrow, so status, count and actions keep their place.
   .fwdvf-segment-cell {
     max-width: 160px;
   }
 
-  // Wide enough for "to 2026-11-11" on one line: a narrower cell breaks inside a date at its hyphen.
-  .fwdvf-range-cell {
-    min-width: 8.5em;
-  }
-
-  // Website names wrap between names, not after every word.
+  // Website names wrap between names, not after every word. Each date of a range sits in a nowrap span.
   .fwdvf-sites-cell {
     min-width: 8em;
+  }
+
+  // Second line of a cell: who started the deletion (under the time) and how long it took (under the count).
+  .fwdvf-sub {
+    display: block;
+    font-size: 12px;
+    color: @fwdvf-text-lighter;
   }
 
   .fwdvf-actions a {
@@ -69,5 +78,55 @@
   .fwdvf-paging {
     display: flex;
     gap: 8px;
+  }
+
+  // Narrow screens: one block per deletion, each value under its column name (from data-label), so nothing hides
+  // behind a sideways scroll. The column names stay in the DOM for screen readers through the pseudo elements.
+  @media (max-width: 900px) {
+    .fwdvf-table-scroll {
+      overflow: visible;
+    }
+
+    .fwdvf-table,
+    .fwdvf-table tbody,
+    .fwdvf-table tr,
+    .fwdvf-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .fwdvf-table thead {
+      display: none;
+    }
+
+    .fwdvf-table tr {
+      padding: 8px 0;
+      border-bottom: 1px solid @fwdvf-border;
+    }
+
+    // !important: Matomo's entity table sets the first cell's left padding and every cell's bottom border with
+    // !important (CoreHome _entityTable.less, Matomo 5 and 6); the row's border stays the line between deletions.
+    .fwdvf-table td,
+    .fwdvf-table td:first-child {
+      padding: 3px 0 !important;
+      border: 0 !important;
+      text-align: left;
+    }
+
+    .fwdvf-table td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 12px;
+      color: @fwdvf-text-lighter;
+    }
+
+    .fwdvf-segment-cell {
+      max-width: 100%;
+    }
+
+    .fwdvf-table tr.fwdvf-details td,
+    .fwdvf-table tr.fwdvf-details td:first-child {
+      padding: 8px !important;
+    }
   }
 }

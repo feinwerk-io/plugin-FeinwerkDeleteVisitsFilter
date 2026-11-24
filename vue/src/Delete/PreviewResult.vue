@@ -61,7 +61,9 @@
               <td class="fwdvf-nowrap">{{ visit.time }}</td>
               <td v-if="multipleSites">{{ siteName(visit.idsite) }}</td>
               <td>{{ visit.ip }}</td>
-              <td>{{ visit.browser }} / {{ visit.os }}</td>
+              <td :title="`${visit.browser} / ${visit.os}`">
+                {{ visit.browser_name || visit.browser }} / {{ visit.os_name || visit.os }}
+              </td>
               <td class="fwdvf-num">{{ visit.actions }}</td>
               <td class="fwdvf-url" :title="visit.entry_url">{{ visit.entry_url }}</td>
               <td>{{ visit.referrer_name || '-' }}</td>

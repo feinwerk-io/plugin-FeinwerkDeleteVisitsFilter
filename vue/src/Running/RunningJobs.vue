@@ -23,6 +23,7 @@
         <Alert v-if="job.status === 'held'" severity="warning">
           {{ translate('FeinwerkDeleteVisitsFilter_HeldHint') }}
         </Alert>
+        <Alert v-if="stalledText(job)" severity="warning">{{ stalledText(job) }}</Alert>
         <button
           type="button"
           class="btn-flat fwdvf-cancel"
@@ -32,17 +33,22 @@
           {{ translate('FeinwerkDeleteVisitsFilter_CancelJob') }}
         </button>
       </div>
-      <Alert v-if="state.error" severity="danger">
-        {{ translate('FeinwerkDeleteVisitsFilter_ConnectionError', state.error) }}
-      </Alert>
-      <p v-if="state.busy" class="fwdvf-hint">
+      <Alert v-if="state.error" severity="danger">{{ connectionErrorText }}</Alert>
+      <p v-if="state.busy && !anyStalled" class="fwdvf-hint">
         {{ translate('FeinwerkDeleteVisitsFilter_BusyHint') }}
       </p>
       <p class="fwdvf-hint">{{ backgroundHint }}</p>
     </ContentBlock>
-    <MatomoDialog v-model="confirmOpen" @yes="cancel()">
+    <MatomoDialog
+      v-model="confirmOpen"
+      :options="{ focusSelector: '.modal.open .modal-footer a:last-child' }"
+      @yes="cancel()"
+    >
       <div class="ui-confirm">
         <h2>{{ translate('FeinwerkDeleteVisitsFilter_CancelJobConfirm') }}</h2>
+        <!-- As in the delete and retry dialogs: the action first, the safe choice last -->
+        <!-- and focused (Matomo 5.1 focuses the last footer link, later versions the -->
+        <!-- focusSelector). -->
         <!-- role names the MatomoDialog button (yes/no), not an ARIA role. -->
         <!-- eslint-disable vuejs-accessibility/aria-role -->
         <input
@@ -77,7 +83,8 @@ import { errorMessage } from '../api';
 import {
   dateRangeText, formatCount, formatRate, sitesText, statusLabel,
 } from '../labels';
-import { JobsLoopState } from '../lib/jobsLoop';
+import { formatLocalDateTime } from '../lib/datetime';
+import { JobsLoopState, stalledSince } from '../lib/jobsLoop';
 import {
   etaSeconds, formatDuration, percent, rate,
 } from '../lib/progress';
@@ -112,6 +119,19 @@ export default defineComponent({
     allIds(): number[] {
       return allSiteIds(this.siteNames);
     },
+    /** The generic transport text needs no "(...)" inside the retry sentence. */
+    connectionErrorText(): string {
+      const error = JobsStore.state.error || '';
+      return error === translate('FeinwerkDeleteVisitsFilter_RequestFailed')
+        ? translate('FeinwerkDeleteVisitsFilter_ConnectionErrorGeneric')
+        : translate('FeinwerkDeleteVisitsFilter_ConnectionError', error);
+    },
+    /**
+     * A stalled job replaces the "another process is working" hint, which would not be true then.
+     */
+    anyStalled(): boolean {
+      return this.jobs.some((job) => this.stalledText(job) !== '');
+    },
     backgroundHint(): string {
       return this.backgroundBudget > 0
         ? translate('FeinwerkDeleteVisitsFilter_BackgroundHint')
@@ -122,6 +142,21 @@ export default defineComponent({
     statusLabel,
     sitesText,
     dateRangeText,
+    /**
+     * No progress for a while: a step died while it held the runner lock, which frees itself after
+     * 10 minutes. Says since when, that the deletion goes on by itself and what the user can do.
+     * The state's samples change with every processJobs response, so this is evaluated again on
+     * each poll.
+     */
+    stalledText(job: Job): string {
+      if (job.status !== 'running') {
+        return '';
+      }
+      const since = stalledSince(JobsStore.state.progressAt[job.idjob], Date.now());
+      return since === null
+        ? ''
+        : translate('FeinwerkDeleteVisitsFilter_StalledHint', formatLocalDateTime(since));
+    },
     progressOf(job: Job): number {
       return percent(job.deleted_visits, job.estimated_visits);
     },

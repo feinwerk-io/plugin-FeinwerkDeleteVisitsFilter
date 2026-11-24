@@ -21,8 +21,13 @@ final class FakePurger implements VisitPurger
     /** Seconds the clock advances per successful purge. */
     public int $secondsPerPurge = 0;
 
-    /** Number of calls that fail with a deadlock before purging works. */
+    /** Number of calls that fail with a deadlock (or $transientMessage) before purging works. */
     public int $transientFailures = 0;
+    public string $transientMessage = 'SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock';
+    /** @var list<string> messages of transient failures thrown one per call before $transientFailures */
+    public array $transientMessages = [];
+    /** Throw them as the driver does (a plain exception), not wrapped in TransientDatabaseException. */
+    public bool $rawTransient = false;
 
     /** Thrown AFTER deleting on call number $failOnCall (1-based). */
     public ?\Throwable $failWith = null;
@@ -40,9 +45,13 @@ final class FakePurger implements VisitPurger
 
     public function purge(int $idSite, array $visits): PurgeResult
     {
+        if ($this->transientMessages !== []) {
+            $message = array_shift($this->transientMessages);
+            throw $this->rawTransient ? new \RuntimeException($message) : new TransientDatabaseException($message);
+        }
         if ($this->transientFailures > 0) {
             $this->transientFailures--;
-            throw new TransientDatabaseException('SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock');
+            throw new TransientDatabaseException($this->transientMessage);
         }
         $ids = array_map(fn(array $visit) => $visit['idvisit'], $visits);
         foreach ($ids as $id) {

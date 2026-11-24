@@ -116,6 +116,13 @@ class PromoLineTest extends TestCase
             [$admin['url'], $admin['external'], $admin['note']]);
         self::assertSame('[FeinwerkDeleteVisitsFilter_PromoConnectorLink]', $admin['link']);
 
+        // where this plugin's installer page is offered, the super user goes there (Peter, 2026-11-23: "Auf den Installer")
+        $installer = PromoLine::variables('connector', 'de', $translate, 'line', false, ['superUser' => true, 'marketplace' => true, 'installer' => true]);
+        self::assertSame(['index.php?module=FeinwerkDeleteVisitsFilter&action=connectorInstaller', false, ''],
+            [$installer['url'], $installer['external'], $installer['note']]);
+        $adminInstaller = PromoLine::variables('connector', 'en', $translate, 'line', false, ['superUser' => false, 'marketplace' => true, 'installer' => true]);
+        self::assertTrue($adminInstaller['external'], 'admins cannot use the installer');
+
         $line = (string) file_get_contents(__DIR__ . '/../../../templates/_promo.twig');
         self::assertStringContainsString('{% if promo.external ?? true %} target="_blank" rel="noopener"{% endif %}', $line);
         self::assertStringContainsString('{% if promo.note ?? \'\' %} title="{{ promo.note }}"{% endif %}', $line);
@@ -140,7 +147,7 @@ class PromoLineTest extends TestCase
     /**
      * current()'s decisions, through lineFor(): WordPress and a super user without a usable Marketplace get no connector
      * message (Peter, 2026-11-17), a super user with one the Marketplace link, an admin plugins.matomo.org plus the note
-     * with Matomo's own word for the super user.
+     * who can install it.
      */
     public function test_the_line_for_each_kind_of_user(): void
     {
@@ -159,7 +166,7 @@ class PromoLineTest extends TestCase
         $admin = PromoLine::lineFor(['superUser' => false, 'marketplace' => false] + $env, $nothing, $translate, 'de');
         self::assertSame('connector', $admin['id']);
         self::assertStringStartsWith('https://plugins.matomo.org/FeinwerkMarketplaceConnector?', $admin['url']);
-        self::assertSame('FeinwerkDeleteVisitsFilter_PremiumAskSuperUser(Installation_SuperUser)', $admin['note']);
+        self::assertSame('FeinwerkDeleteVisitsFilter_PremiumAskSuperUser', $admin['note']);
 
         foreach ([
             'super user without a usable Marketplace' => ['marketplace' => false] + $env,

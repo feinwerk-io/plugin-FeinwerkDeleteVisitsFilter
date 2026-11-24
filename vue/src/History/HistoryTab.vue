@@ -24,46 +24,80 @@
       </div>
       <ActivityIndicator :loading="loading" />
       <Alert v-if="error" severity="danger">{{ error }}</Alert>
-      <p v-if="!loading && !error && jobs.length === 0">
+      <p v-if="!loading && !error && jobs.length === 0 && !filtered">
         {{ translate('FeinwerkDeleteVisitsFilter_HistoryEmpty') }}
+      </p>
+      <p v-if="!loading && !error && jobs.length === 0 && filtered" class="fwdvf-history-nomatch">
+        {{ translate('FeinwerkDeleteVisitsFilter_HistoryNoMatch') }}
+        <button type="button" class="btn-flat" @click="showAll()">
+          {{ translate('FeinwerkDeleteVisitsFilter_FilterShowAll') }}
+        </button>
       </p>
       <div v-if="jobs.length" class="fwdvf-table-scroll">
         <table class="entityTable dataTable fwdvf-table">
           <thead>
             <tr>
               <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnCreated') }}</th>
-              <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnBy') }}</th>
               <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnWebsites') }}</th>
-              <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnSegment') }}</th>
               <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnDateRange') }}</th>
               <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnStatus') }}</th>
               <th class="fwdvf-num">{{ translate('FeinwerkDeleteVisitsFilter_ColumnDeleted') }}</th>
-              <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnDuration') }}</th>
               <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnActions') }}</th>
+              <th>{{ translate('FeinwerkDeleteVisitsFilter_ColumnSegment') }}</th>
             </tr>
           </thead>
           <tbody>
             <template v-for="job in jobs" :key="job.idjob">
               <tr>
-                <td class="fwdvf-nowrap">{{ formatUtc(job.created_at) }}</td>
-                <td>{{ byText(job) }}</td>
-                <td class="fwdvf-sites-cell">{{ sitesText(job.idsites, siteNames, allIds) }}</td>
-                <td>
-                  <code class="fwdvf-code fwdvf-segment-cell" :title="job.segment">
-                    {{ job.segment }}
-                  </code>
+                <!-- who started it under the time: outcome columns stay in view on narrow cards -->
+                <td :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnCreated')">
+                  <span class="fwdvf-nowrap">{{ formatUtc(job.created_at) }}</span>
+                  <span class="fwdvf-sub" :title="translate('FeinwerkDeleteVisitsFilter_ColumnBy')">
+                    {{ byText(job) }}
+                  </span>
                 </td>
-                <td class="fwdvf-range-cell">{{ dateRangeText(job.date_from, job.date_to) }}</td>
-                <td>
+                <td
+                  class="fwdvf-sites-cell"
+                  :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnWebsites')"
+                >{{ sitesText(job.idsites, siteNames, allIds) }}</td>
+                <td
+                  class="fwdvf-range-cell"
+                  :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnDateRange')"
+                >
+                  <template
+                    v-for="(part, index) in dateRangeParts(job.date_from, job.date_to)"
+                    :key="index"
+                  >
+                    <span v-if="part.date" class="fwdvf-nowrap">{{ part.text }}</span>
+                    <template v-else>{{ part.text }}</template>
+                  </template>
+                </td>
+                <td :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnStatus')">
                   <span :class="`fwdvf-status fwdvf-status-${job.status}`">
                     {{ statusLabel(job.status) }}
                   </span>
                 </td>
-                <td class="fwdvf-num">{{ formatCount(job.deleted_visits) }}</td>
-                <td class="fwdvf-nowrap">{{ durationText(job) }}</td>
-                <td class="fwdvf-actions">
+                <td
+                  class="fwdvf-num"
+                  :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnDeleted')"
+                >
+                  <span class="fwdvf-nowrap">{{ formatCount(job.deleted_visits) }}</span>
+                  <span
+                    v-if="durationText(job) !== '-'"
+                    class="fwdvf-sub fwdvf-nowrap"
+                    :title="translate('FeinwerkDeleteVisitsFilter_ColumnDuration')"
+                  >{{ durationText(job) }}</span>
+                </td>
+                <td
+                  class="fwdvf-actions"
+                  :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnActions')"
+                >
                   <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events -->
-                  <a href="" @click.prevent="toggle(job.idjob)">
+                  <a
+                    href=""
+                    :aria-expanded="isExpanded(job.idjob) ? 'true' : 'false'"
+                    @click.prevent="toggle(job.idjob)"
+                  >
                     {{ translate('FeinwerkDeleteVisitsFilter_Details') }}
                   </a>
                   <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events -->
@@ -79,26 +113,37 @@
                     {{ translate('FeinwerkDeleteVisitsFilter_RetryJob') }}
                   </a>
                 </td>
+                <td :data-label="translate('FeinwerkDeleteVisitsFilter_ColumnSegment')">
+                  <code class="fwdvf-code fwdvf-segment-cell" :title="job.segment">
+                    {{ job.segment }}
+                  </code>
+                </td>
               </tr>
               <tr v-if="expanded.indexOf(job.idjob) !== -1" class="fwdvf-details">
-                <td colspan="9">
+                <td colspan="7">
                   <p v-if="job.segment">
-                    <strong>{{ translate('FeinwerkDeleteVisitsFilter_ColumnSegment') }}:</strong>
+                    <strong>
+                      {{ translate('FeinwerkDeleteVisitsFilter_ConfirmSegmentLabel') }}
+                    </strong>
                     <code class="fwdvf-code">{{ job.segment }}</code>
                   </p>
                   <p>
                     {{ translate(
                       'FeinwerkDeleteVisitsFilter_DetailsSteps',
-                      job.batches,
-                      job.invalidated_dates,
-                      job.batch_size,
+                      formatCount(job.batches),
+                      formatCount(job.invalidated_dates),
+                      formatCount(job.batch_size),
                     ) }}
                   </p>
                   <template v-if="rowsOf(job).length">
                     <strong>{{ translate('FeinwerkDeleteVisitsFilter_DeletedRows') }}</strong>
                     <ul>
                       <li v-for="row in rowsOf(job)" :key="row.table">
-                        {{ row.table }}: {{ formatCount(row.count) }}
+                        {{ translate(
+                          'FeinwerkDeleteVisitsFilter_DeletedRowsItem',
+                          row.table,
+                          formatCount(row.count),
+                        ) }}
                       </li>
                     </ul>
                   </template>
@@ -111,7 +156,7 @@
                     </ul>
                   </template>
                   <p v-if="job.error" class="fwdvf-error">
-                    <strong>{{ translate('FeinwerkDeleteVisitsFilter_DetailsError') }}:</strong>
+                    <strong>{{ translate('FeinwerkDeleteVisitsFilter_DetailsError') }}</strong>
                     {{ job.error }}
                   </p>
                 </td>
@@ -136,7 +181,7 @@
     </ContentBlock>
     <MatomoDialog
       v-model="retryOpen"
-      :options="{ focusSelector: '.modal.open .modal-footer a:first-child' }"
+      :options="{ focusSelector: '.modal.open .modal-footer a:last-child' }"
       @yes="retry()"
     >
       <div class="ui-confirm">
@@ -147,14 +192,15 @@
             retryTarget ? formatCount(retryTarget.deleted_visits) : '',
           ) }}
         </h2>
+        <!-- The action first, Cancel last and focused (Matomo 5.1: the last footer link). -->
         <!-- role names the MatomoDialog button (yes/no), not an ARIA role. -->
         <!-- eslint-disable vuejs-accessibility/aria-role -->
-        <input type="button" role="no" :value="translate('FeinwerkDeleteVisitsFilter_Cancel')" />
         <input
           type="button"
           role="yes"
           :value="translate('FeinwerkDeleteVisitsFilter_RetryJobConfirmYes')"
         />
+        <input type="button" role="no" :value="translate('FeinwerkDeleteVisitsFilter_Cancel')" />
         <!-- eslint-enable vuejs-accessibility/aria-role -->
       </div>
     </MatomoDialog>
@@ -175,7 +221,7 @@ import {
 import { Field } from 'CorePluginsAdmin';
 import { errorMessage, getJobs, retryJob } from '../api';
 import {
-  dateRangeText, formatCount, formatUtc, messageText, sitesText, sourceLabel, statusLabel,
+  dateRangeParts, formatCount, formatUtc, messageText, sitesText, sourceLabel, statusLabel,
 } from '../labels';
 import { durationSeconds, normalizeRows } from '../lib/jobs';
 import { formatDuration } from '../lib/progress';
@@ -245,6 +291,9 @@ export default defineComponent({
         { key: 'api', value: sourceLabel('api') },
       ];
     },
+    filtered(): boolean {
+      return this.status !== '' || this.source !== '';
+    },
     /** Changes when a deletion starts or finishes, so the list follows the running jobs. */
     queueVersion(): string {
       const active = JobsStore.state.active.map((job) => `${job.idjob}:${job.status}`).join(',');
@@ -262,7 +311,15 @@ export default defineComponent({
   methods: {
     formatCount,
     formatUtc,
-    dateRangeText,
+    dateRangeParts,
+    showAll(): void {
+      this.status = '';
+      this.source = '';
+      this.reload(0);
+    },
+    isExpanded(idJob: number): boolean {
+      return this.expanded.indexOf(idJob) !== -1;
+    },
     messageText,
     sitesText,
     statusLabel,

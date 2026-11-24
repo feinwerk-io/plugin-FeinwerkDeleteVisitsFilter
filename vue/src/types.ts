@@ -64,7 +64,9 @@ export interface SampleVisit {
   referrer_type: number;
   referrer_name: string;
   browser: string;
+  browser_name: string;
   os: string;
+  os_name: string;
   device_type: number | null;
   actions: number;
   entry_url: string;

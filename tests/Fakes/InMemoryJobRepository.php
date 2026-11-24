@@ -83,8 +83,15 @@ final class InMemoryJobRepository implements JobRepository
         return true;
     }
 
+    /** Number of saveProgress() calls that fail like a lost database connection, before saving. */
+    public int $saveProgressFailures = 0;
+
     public function saveProgress(Job $job, string $nowUtc): bool
     {
+        if ($this->saveProgressFailures > 0) {
+            $this->saveProgressFailures--;
+            throw new \RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+        }
         if (!isset($this->rows[$job->idJob])) {
             return false;
         }

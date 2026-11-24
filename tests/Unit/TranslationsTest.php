@@ -18,12 +18,6 @@ class TranslationsTest extends TestCase
     /** Languages every Feinwerk plugin ships (Peter, 2026-11-19: "bitte alle Plugins mindestens in französisch, spanisch, italienisch, deutsch, englisch ausliefern"). */
     private const LANGUAGES = ['en', 'de', 'fr', 'es', 'it'];
 
-    /**
-     * Texts whose translation fills a placeholder English does not have: the German admin note takes Matomo's own word
-     * for the super user (PromoLine::lineFor() passes it).
-     */
-    private const EXTRA_PLACEHOLDERS = ['de' => ['PremiumAskSuperUser']];
-
     public function test_everyLanguageShipsWithTheEnglishKeysInTheirOrder(): void
     {
         $english = self::keys('en');
@@ -49,9 +43,6 @@ class TranslationsTest extends TestCase
         foreach (self::LANGUAGES as $language) {
             foreach (self::texts($language) as $key => $text) {
                 $this->assertStringNotContainsString('\\$', $text, "{$language} {$key}");
-                if (in_array($key, self::EXTRA_PLACEHOLDERS[$language] ?? [], true)) {
-                    continue;
-                }
                 $this->assertSame($placeholders($english[$key]), $placeholders($text), "{$language} {$key}");
             }
         }

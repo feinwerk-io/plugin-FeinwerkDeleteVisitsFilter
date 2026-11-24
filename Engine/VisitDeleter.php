@@ -30,13 +30,18 @@ class VisitDeleter implements VisitPurger
 
         $results = [];
         $subjects = array_map(fn(array $visit) => ['idsite' => $idSite, 'idvisit' => (int) $visit['idvisit']], $visits);
-        // Plugins that keep visit data outside the log tables delete it on this event (same as the GDPR tool).
-        Piwik::postEvent('PrivacyManager.deleteDataSubjects', [&$results, $subjects]);
+        $counts = TransientDatabaseException::wrap(function () use (&$results, $subjects, $visits) {
+            // Plugins that keep visit data outside the log tables delete it on this event (same as the GDPR tool).
+            // Inside the wrap: a lost connection in their listener is retried like the core deletion (both delete
+            // the given visits only, so running them again is harmless).
+            $results = [];
+            Piwik::postEvent('PrivacyManager.deleteDataSubjects', [&$results, $subjects]);
 
-        // idvisit is unique across websites; without idsite the core builds a plain "idvisit IN (…)".
-        $counts = TransientDatabaseException::wrap(fn() => $this->dataSubjects->deleteDataSubjectsWithoutInvalidatingArchives(
-            array_map(fn(array $visit) => ['idvisit' => (int) $visit['idvisit']], $visits)
-        ));
+            // idvisit is unique across websites; without idsite the core builds a plain "idvisit IN (…)".
+            return $this->dataSubjects->deleteDataSubjectsWithoutInvalidatingArchives(
+                array_map(fn(array $visit) => ['idvisit' => (int) $visit['idvisit']], $visits)
+            );
+        });
 
         $rows = [];
         foreach (array_merge($results, $counts) as $table => $count) {

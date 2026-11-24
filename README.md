@@ -138,17 +138,52 @@ with `jobs --cancel=<id>`. Without a terminal (cron, scripts) `delete` requires 
 
 ### API
 
+All methods need super user access. Send `token_auth` and all parameters via POST (long segments do not fit into a
+URL). `idSites` takes one website ID, a comma-separated list or `all`; dates are `YYYY-MM-DD`, counted in each
+website's time zone; errors in the input answer with HTTP 400 and name the parameter, an unknown deletion with HTTP 404.
+
 | Method | Purpose |
 |---|---|
-| `FeinwerkDeleteVisitsFilter.previewDeletion` | Matches per website, total, a sample of visits |
-| `FeinwerkDeleteVisitsFilter.createJob` | Queue a deletion |
-| `FeinwerkDeleteVisitsFilter.processJobs` | Work on the queue for a few seconds; returns active jobs |
-| `FeinwerkDeleteVisitsFilter.getJob` / `getJobs` | Job details / history |
-| `FeinwerkDeleteVisitsFilter.cancelJob` / `retryJob` | Cancel a job / continue a failed one |
+| `FeinwerkDeleteVisitsFilter.previewDeletion` | Check first: matches per website, total and a sample of visits, nothing is deleted |
+| `FeinwerkDeleteVisitsFilter.createJob` | Queue a deletion; with `expectedVisits` nothing is queued when the number of matching visits differs from the one you checked, `dryRun=1` only counts |
+| `FeinwerkDeleteVisitsFilter.processJobs` | Work on the queue for up to 15 seconds; returns the active deletions |
+| `FeinwerkDeleteVisitsFilter.getJob` / `getJobs` | One deletion / the history (filters `status`, `source`) |
+| `FeinwerkDeleteVisitsFilter.cancelJob` / `retryJob` | Stop a deletion / continue a failed one |
 | `FeinwerkDeleteVisitsFilter.countVisits` | Number of matching visits |
-| `FeinwerkDeleteVisitsFilter.deleteVisits` | Deprecated: delete within one request |
+| `FeinwerkDeleteVisitsFilter.deleteVisits` | Deprecated: deletes within one request, without check; use `createJob` |
 
-`idSites` accepts one ID, a comma-separated list or `all`. Send `token_auth` via POST.
+A safe deletion in three calls (here with curl; `TOKEN` is your token):
+
+    # 1. check: how many visits of the bot network match, per website?
+    curl -s https://matomo.example/index.php -d module=API -d format=json -d token_auth=TOKEN \
+      -d method=FeinwerkDeleteVisitsFilter.previewDeletion -d idSites=1,3 \
+      -d segment='visitIp>=192.0.2.0;visitIp<=192.0.2.255' -d dateFrom=2026-10-01 -d dateTo=2026-10-31
+
+    # 2. queue it with the total from step 1 (HTTP 400 and nothing queued if the number no longer matches;
+    #    the deletion itself removes every visit that matches when it runs)
+    curl -s https://matomo.example/index.php -d module=API -d format=json -d token_auth=TOKEN \
+      -d method=FeinwerkDeleteVisitsFilter.createJob -d idSites=1,3 \
+      -d segment='visitIp>=192.0.2.0;visitIp<=192.0.2.255' -d dateFrom=2026-10-01 -d dateTo=2026-10-31 \
+      -d expectedVisits=48409
+
+    # 3. work on it until "jobs" is empty (or leave it to the hourly task or the console command)
+    curl -s https://matomo.example/index.php -d module=API -d format=json -d token_auth=TOKEN \
+      -d method=FeinwerkDeleteVisitsFilter.processJobs
+
+More calls:
+
+    # one deletion and the history of failed ones
+    ... -d method=FeinwerkDeleteVisitsFilter.getJob -d idJob=12
+    ... -d method=FeinwerkDeleteVisitsFilter.getJobs -d status=failed -d limit=20
+    # stop a deletion (visits deleted so far stay deleted) or continue a failed one
+    ... -d method=FeinwerkDeleteVisitsFilter.cancelJob -d idJob=12
+    ... -d method=FeinwerkDeleteVisitsFilter.retryJob -d idJob=13
+    # only count
+    ... -d method=FeinwerkDeleteVisitsFilter.countVisits -d idSite=all -d segment='referrerUrl=@seo-offers.example' \
+        -d dateFrom=2026-10-01 -d dateTo=2026-10-31
+
+Job times (`created_at`, `started_at`, `finished_at`, `heartbeat_at`) are UTC; messages are translation keys with
+parameters. Each method's docblock in `API.php` lists every parameter and the fields of the result.
 
 ## Installing the Feinwerk Connector
 

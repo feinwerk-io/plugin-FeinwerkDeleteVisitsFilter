@@ -4,6 +4,7 @@
     <Field
       uicontrol="select"
       name="fwdvf-date-preset"
+      :ui-control-attributes="presetAttributes"
       :model-value="modelValue.preset"
       :options="presetOptions"
       @update:model-value="selectPreset($event)"
@@ -15,7 +16,7 @@
         @range-change="changeRange($event)"
       />
     </div>
-    <p class="fwdvf-muted">
+    <p class="fwdvf-muted fwdvf-daterange-value">
       {{ translate('FeinwerkDeleteVisitsFilter_DateRangeValue', modelValue.from, modelValue.to) }}.
       {{ translate('FeinwerkDeleteVisitsFilter_DateRangeTimezoneHint') }}
     </p>
@@ -56,6 +57,10 @@ export default defineComponent({
   emits: ['update:modelValue'],
   components: { DateRangePicker, Field },
   computed: {
+    // The preset select has no visible label of its own: the heading above names it.
+    presetAttributes(): Record<string, string> {
+      return { 'aria-label': translate('FeinwerkDeleteVisitsFilter_SectionDateRange') };
+    },
     presetOptions(): { key: string; value: string }[] {
       return DATE_PRESETS.map((preset) => ({ key: preset, value: translate(PRESET_KEYS[preset]) }));
     },

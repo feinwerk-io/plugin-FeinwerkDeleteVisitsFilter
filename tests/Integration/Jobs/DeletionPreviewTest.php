@@ -64,7 +64,8 @@ class DeletionPreviewTest extends IntegrationTestCase
 
     public function test_build_limitsTheSampleAcrossSites(): void
     {
-        $this->assertCount(2, $this->preview->build('1,2', self::BOT, '2026-03-14', '2026-03-14', 2)['sample']);
+        // spread over the websites: one row of each, not two of the first
+        $this->assertSame([1, 2], array_column($this->preview->build('1,2', self::BOT, '2026-03-14', '2026-03-14', 2)['sample'], 'idsite'));
         $this->assertCount(3, $this->preview->build('1,2', self::BOT, '2026-03-14', '2026-03-14', 10)['sample']);
         $this->assertSame([], $this->preview->build('1,2', self::BOT, '2026-03-14', '2026-03-14', 0)['sample']);
     }
@@ -80,6 +81,11 @@ class DeletionPreviewTest extends IntegrationTestCase
         $this->assertStringContainsString('example.com/a', $first['entry_url']);
         $this->assertSame(2, $first['actions']);
         $this->assertSame(16, strlen($first['visitor_id']));
+        $this->assertIsString($first['browser_name']);
+        $this->assertIsString($first['os_name']);
+        if ($first['browser'] !== '') {
+            $this->assertNotSame('', $first['browser_name']);
+        }
 
         $berlin = $sample[2];
         $this->assertSame(2, $berlin['idsite']);

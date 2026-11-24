@@ -6,6 +6,9 @@
  */
 
 import { NumberFormatter, translate } from 'CoreHome';
+import {
+  RANGE_FROM_MARK, RANGE_TO_MARK, RangePart, rangeParts,
+} from './lib/dateRange';
 import { formatLocalDateTime, parseUtc } from './lib/datetime';
 import { SiteNames, summarizeSites } from './lib/sites';
 import { JobMessage, JobSource, JobStatus } from './types';
@@ -55,6 +58,15 @@ export function sitesText(ids: number[], names: SiteNames, allIds: number[]): st
 
 export function dateRangeText(from: string, to: string): string {
   return from === to ? from : translate('FeinwerkDeleteVisitsFilter_DateRangeValue', from, to);
+}
+
+/** The date range in pieces, each date on one line (tables). */
+export function dateRangeParts(from: string, to: string): RangePart[] {
+  return rangeParts(
+    translate('FeinwerkDeleteVisitsFilter_DateRangeValue', RANGE_FROM_MARK, RANGE_TO_MARK),
+    from,
+    to,
+  );
 }
 
 /** "Y-m-d H:i:s" in UTC → local date and time of the browser ("2026-11-11 22:57"). */

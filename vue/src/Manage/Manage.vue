@@ -3,25 +3,35 @@
     <ContentBlock :content-title="translate('FeinwerkDeleteVisitsFilter_PageTitle')">
       <p>{{ translate('FeinwerkDeleteVisitsFilter_PageDescription') }}</p>
       <Alert severity="warning">
-        <strong>{{ translate('FeinwerkDeleteVisitsFilter_Warning') }}:</strong>
+        <strong>{{ translate('FeinwerkDeleteVisitsFilter_Warning') }}</strong>
         {{ translate('FeinwerkDeleteVisitsFilter_WarningText') }}
       </Alert>
     </ContentBlock>
     <RunningJobs :site-names="siteNames" :background-budget="backgroundBudget" />
-    <div class="fwdvf-tabs">
+    <div class="fwdvf-tabs" role="tablist">
       <button
-        v-for="item in tabs"
+        v-for="(item, index) in tabs"
+        :id="`fwdvf-tab-${item.id}`"
         :key="item.id"
         type="button"
+        role="tab"
         class="fwdvf-tab"
         :class="{ 'fwdvf-tab-active': tab === item.id }"
+        :aria-selected="tab === item.id ? 'true' : 'false'"
+        :aria-controls="panelId(item.id)"
+        :tabindex="tab === item.id ? 0 : -1"
         @click="setTab(item.id)"
+        @keydown.left.prevent="moveTab(index, -1)"
+        @keydown.right.prevent="moveTab(index, 1)"
       >
         {{ item.label }}
       </button>
     </div>
     <DeleteTab
       v-show="tab === 'delete'"
+      id="fwdvf-panel-delete"
+      role="tabpanel"
+      aria-labelledby="fwdvf-tab-delete"
       :initial-site-id="initialSiteId"
       :site-names="siteNames"
       :confirm-threshold="confirmThreshold"
@@ -30,6 +40,9 @@
     />
     <HistoryTab
       v-if="tab === 'history'"
+      id="fwdvf-panel-history"
+      role="tabpanel"
+      aria-labelledby="fwdvf-tab-history"
       :site-names="siteNames"
       @use-template="useTemplate($event)"
     />
@@ -106,6 +119,19 @@ export default defineComponent({
   methods: {
     setTab(tab: TabId): void {
       MatomoUrl.updateHash({ ...MatomoUrl.hashParsed.value, tab });
+    },
+    // The History panel exists only while it is shown; no reference to a missing element.
+    panelId(id: TabId): string | undefined {
+      return id === 'delete' || this.tab === id ? `fwdvf-panel-${id}` : undefined;
+    },
+    // Arrow keys move between the tabs (WAI-ARIA tabs pattern): the next tab opens, gets the focus.
+    moveTab(index: number, step: number): void {
+      const next = this.tabs[(index + step + this.tabs.length) % this.tabs.length];
+      this.setTab(next.id);
+      const button = document.getElementById(`fwdvf-tab-${next.id}`);
+      if (button) {
+        button.focus();
+      }
     },
     useTemplate(template: JobTemplate): void {
       this.template = template;

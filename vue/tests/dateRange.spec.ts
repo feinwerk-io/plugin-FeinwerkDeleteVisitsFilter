@@ -6,7 +6,8 @@
  */
 
 import {
-  DatePreset, EARLIEST_DAY, isValidDay, rangeForPreset, rangeProblem, toIsoDay,
+  DatePreset, EARLIEST_DAY, isValidDay, RANGE_FROM_MARK, RANGE_TO_MARK, rangeForPreset, rangeParts, rangeProblem,
+  toIsoDay,
 } from '../src/lib/dateRange';
 
 describe('rangeForPreset', () => {
@@ -66,5 +67,38 @@ describe('rangeProblem', () => {
     expect(rangeProblem({ from: '2026-10-06', to: '2026-10-01' }))
       .toEqual({ key: 'FeinwerkDeleteVisitsFilter_ErrorDateOrder', value: '' });
     expect(rangeProblem({ from: '2026-10-01', to: '2026-10-01' })).toBeNull();
+  });
+});
+
+describe('rangeParts', () => {
+  const F = RANGE_FROM_MARK;
+  const T = RANGE_TO_MARK;
+
+  it('keeps each date as one piece between the translated words', () => {
+    expect(rangeParts(`${F} to ${T}`, '2026-10-25', '2026-11-23')).toEqual([
+      { text: '2026-10-25', date: true },
+      { text: ' to ', date: false },
+      { text: '2026-11-23', date: true },
+    ]);
+    expect(rangeParts(`du ${F} au ${T}`, '2026-10-25', '2026-11-23')).toEqual([
+      { text: 'du ', date: false },
+      { text: '2026-10-25', date: true },
+      { text: ' au ', date: false },
+      { text: '2026-11-23', date: true },
+    ]);
+  });
+
+  it('follows a translation that puts the end first', () => {
+    expect(rangeParts(`${T} (${F})`, 'a', 'b')).toEqual([
+      { text: 'b', date: true },
+      { text: ' (', date: false },
+      { text: 'a', date: true },
+      { text: ')', date: false },
+    ]);
+  });
+
+  it('shows a single day once, and an unexpected translation as one piece', () => {
+    expect(rangeParts(`${F} to ${T}`, '2026-11-23', '2026-11-23')).toEqual([{ text: '2026-11-23', date: true }]);
+    expect(rangeParts('range', 'a', 'b')).toEqual([{ text: 'range', date: false }]);
   });
 });

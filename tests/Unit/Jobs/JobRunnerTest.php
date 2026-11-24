@@ -18,6 +18,7 @@ use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\Job;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\Jobs\JobRunner;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fakes\CallLog;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fakes\FakeClock;
+use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fakes\FakeDatabaseConnection;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fakes\FakeInvalidation;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fakes\FakePurger;
 use Piwik\Plugins\FeinwerkDeleteVisitsFilter\tests\Fakes\FakeRunnerLock;
@@ -37,6 +38,7 @@ class JobRunnerTest extends TestCase
     private FakeSiteDirectory $sites;
     private FakeRunnerLock $lock;
     private RecordingEventDispatcher $events;
+    private FakeDatabaseConnection $connection;
 
     protected function setUp(): void
     {
@@ -49,6 +51,7 @@ class JobRunnerTest extends TestCase
         $this->sites = new FakeSiteDirectory([1 => 'UTC']);
         $this->lock = new FakeRunnerLock();
         $this->events = new RecordingEventDispatcher();
+        $this->connection = new FakeDatabaseConnection();
     }
 
     private function runner(int $windowSize = 3): JobRunner
@@ -63,6 +66,7 @@ class JobRunnerTest extends TestCase
             $this->clock,
             $this->events,
             new NullLogger(),
+            $this->connection,
             $windowSize
         );
     }
@@ -246,6 +250,114 @@ class JobRunnerTest extends TestCase
         $this->assertSame([1, 2], $this->clock->sleeps);
     }
 
+    /**
+     * Regression (2026-11-23): "MySQL server has gone away" in a step held the runner lock for 10 minutes and left the
+     * page waiting. A lost connection is reconnected and the step retried.
+     */
+    public function test_run_reconnectsAfterALostConnectionAndContinues(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $this->purger->transientFailures = 1;
+        $this->purger->transientMessage = 'SQLSTATE[HY000]: General error: 2006 MySQL server has gone away';
+        $job = $this->queueJob();
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_DONE, $this->job($job)->status);
+        $this->assertSame(1, $this->connection->reconnects);
+        $this->assertSame([1, 2], $this->purger->purgedIds());
+    }
+
+    /** A database restart: the connection is lost, then refused for a moment, then back. */
+    public function test_run_retriesWhileTheDatabaseRestarts(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $this->purger->transientMessages = [
+            'SQLSTATE[HY000]: General error: 2006 MySQL server has gone away',
+            'SQLSTATE[HY000] [2002] Connection refused',
+        ];
+        $job = $this->queueJob();
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_DONE, $this->job($job)->status);
+        $this->assertSame(2, $this->connection->reconnects);
+        $this->assertSame([1, 2], $this->clock->sleeps);
+    }
+
+    /** Not every call goes through TransientDatabaseException::wrap(): a plain driver exception is retried as well. */
+    public function test_run_retriesARawLostConnection(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $this->purger->rawTransient = true;
+        $this->purger->transientMessages = ['SQLSTATE[HY000]: General error: 2006 MySQL server has gone away'];
+        $job = $this->queueJob();
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_DONE, $this->job($job)->status);
+        $this->assertSame(1, $this->connection->reconnects);
+    }
+
+    /** Saving the progress is a database step too: a lost connection there is reconnected and saved again. */
+    public function test_run_retriesSavingTheProgressAfterALostConnection(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $job = $this->queueJob();
+        $this->jobs->saveProgressFailures = 1;
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_DONE, $this->job($job)->status);
+        $this->assertSame(1, $this->connection->reconnects);
+        $this->assertSame([1, 2], $this->purger->purgedIds());
+    }
+
+    /** Other errors are not retried: the job fails at once. */
+    public function test_run_doesNotRetryOtherErrors(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $this->purger->rawTransient = true;
+        $this->purger->transientMessages = ["SQLSTATE[42S02]: Base table or view not found: 1146 Table 'log_visit' doesn't exist"];
+        $job = $this->queueJob();
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_FAILED, $this->job($job)->status);
+        $this->assertSame(0, $this->connection->reconnects);
+        $this->assertSame([], $this->clock->sleeps);
+    }
+
+    /** The connection stays away through the retries: reconnect, mark the job failed (retryable) and free the lock. */
+    public function test_run_failsAndFreesTheLockWhenTheConnectionStaysLost(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $this->purger->transientFailures = 4;
+        $this->purger->transientMessage = 'SQLSTATE[HY000]: General error: 2013 Lost connection to MySQL server during query';
+        $job = $this->queueJob();
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_FAILED, $this->job($job)->status);
+        $this->assertStringContainsString('Lost connection', $this->job($job)->error);
+        $this->assertSame(4, $this->connection->reconnects, 'before each retry and once before marking it failed');
+        $this->assertSame(1, $this->lock->released);
+        $this->assertSame([JobRunner::EVENT_FAILED], $this->events->names());
+    }
+
+    public function test_run_freesTheLockAfterReconnectingWhenTheReleaseLostTheConnection(): void
+    {
+        $this->addVisits(1, 2, [1, 2]);
+        $this->lock->releaseFailures = 1;
+        $job = $this->queueJob();
+
+        $this->runner()->run(null);
+
+        $this->assertSame(Job::STATUS_DONE, $this->job($job)->status);
+        $this->assertSame(1, $this->connection->reconnects);
+        $this->assertSame(1, $this->lock->released);
+    }
+
     public function test_run_failsAfterTooManyTransientErrors(): void
     {
         $this->addVisits(1, 2, [1, 2]);
@@ -288,7 +400,8 @@ class JobRunnerTest extends TestCase
             $this->lock,
             $this->clock,
             $this->events,
-            new NullLogger()
+            new NullLogger(),
+            $this->connection
         );
 
         $result = $runner->run(null);

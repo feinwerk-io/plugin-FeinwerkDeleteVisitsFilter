@@ -12,6 +12,47 @@ import { addSample, ProgressSample } from './progress';
 
 export const ERROR_RETRY_MS = 10000;
 
+/**
+ * A running job whose deleted visits have not changed for this long counts as stalled: a request
+ * died while it held the runner lock (a lost database connection, a killed PHP process), and the
+ * lock only frees itself after its TTL (MatomoRunnerLock::TTL, 600 s). A normal step deletes one
+ * batch in seconds.
+ */
+export const STALL_MS = 120000;
+
+/**
+ * The last time a running job moved, as this page saw it (browser clock); key: see progressKey().
+ */
+export interface ProgressMark {
+  key: string | null;
+  at: number;
+}
+
+/**
+ * What changes while a running job works: deleted visits, steps, the website, and the heartbeat the
+ * runner writes after every scanned window (a rare segment scans many windows without deleting).
+ * null while the first count runs: it writes nothing until all websites are counted, so a long
+ * count never looks stalled.
+ */
+export function progressKey(job: Job): string | null {
+  if (job.estimated_visits === null) {
+    return null;
+  }
+  return [job.deleted_visits, job.batches, job.site_index, job.heartbeat_at].join('|');
+}
+
+/** When the job last moved, if that is longer ago than STALL_MS; null while it moves. Pure. */
+export function stalledSince(
+  mark: ProgressMark | undefined,
+  now: number,
+  stallMs = STALL_MS,
+): number | null {
+  if (!mark || now - mark.at < stallMs) {
+    return null;
+  }
+  return mark.at;
+}
+
 export interface JobsLoopDeps {
   processJobs(): Promise<ProcessResult>;
   getJob(idJob: number): Promise<Job>;
@@ -30,6 +71,8 @@ export interface JobsLoopState {
   running: boolean;
   error: string | null;
   samples: Record<number, ProgressSample[]>;
+  /** Per running job: its deleted visits and when they last changed (stall detection). */
+  progressAt: Record<number, ProgressMark>;
   /** Increases whenever jobs finished – lets the history reload. */
   finishedCount: number;
 }
@@ -46,6 +89,7 @@ export class JobsLoop {
     running: false,
     error: null,
     samples: {},
+    progressAt: {},
     finishedCount: 0,
   });
 
@@ -182,12 +226,18 @@ export class JobsLoop {
 
   private recordSamples(): void {
     const samples: Record<number, ProgressSample[]> = {};
+    const progressAt: Record<number, ProgressMark> = {};
+    const now = this.deps.now();
     this.state.active.filter((job) => job.status === 'running').forEach((job) => {
       samples[job.idjob] = addSample(
         this.state.samples[job.idjob] || [],
-        { at: this.deps.now(), deleted: job.deleted_visits },
+        { at: now, deleted: job.deleted_visits },
       );
+      const mark = this.state.progressAt[job.idjob];
+      const key = progressKey(job);
+      progressAt[job.idjob] = mark && key !== null && mark.key === key ? mark : { key, at: now };
     });
     this.state.samples = samples;
+    this.state.progressAt = progressAt;
   }
 }
